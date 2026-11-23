@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiClient } from '../../api/client';
 import {
   Settings,
   Server,
@@ -31,14 +32,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   const handleTestConnection = async () => {
     setTestResult('Pinging API Gateway & DynamoDB...');
+    const start = performance.now();
     try {
-      const res = await fetch('/health');
-      if (res.ok) {
-        const data = await res.json();
-        setTestResult(`Success! Latency: <50ms | Backend: ${data.database_backend} | Status: ${data.status}`);
-      } else {
-        setTestResult(`HTTP Error ${res.status}`);
-      }
+      const data = await apiClient.getHealth();
+      const latency = Math.round(performance.now() - start);
+      setTestResult(`Success! Latency: ${latency}ms | Backend: ${data.database_backend} | Status: ${data.status}`);
     } catch (e: any) {
       setTestResult(`Connection Failed: ${e.message}`);
     }
