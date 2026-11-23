@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  VulnGuard AI - Serverless Architecture
+  FastAPI Lambda (Mangum), Amazon DynamoDB (VulnGuardAssessments), Amazon Bedrock Nova, and Amazon API Gateway HTTP API v2.
+
+Globals:
+  Function:
+    Timeout: 29
+    MemorySize: 512
+    Runtime: python3.12
+    Tracing: Active
+    Environment:
+      Variables:
+        ENVIRONMENT: production
+        DEBUG: "false"
+        DATABASE_BACKEND: dynamodb
+        DYNAMODB_TABLE_NAME: !Ref VulnGuardAssessmentsTable
+        AWS_REGION: !Ref AWS::Region
+        BEDROCK_MODEL_ID: amazon.nova-lite-v1:0
+        USE_BEDROCK_MOCK: "false"
+        CORS_ORIGINS: '["https://vulnguard.buildwithaveeck.com","http://localhost:5173"]'
+
+Resources:
+  # ==========================================
+  # DynamoDB Assessments & History Table
+  # ==========================================
+  VulnGuardAssessmentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: VulnGuardAssessments
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: assessment_id
+          AttributeType: S
+        - AttributeName: entity_type
+          AttributeType: S
+        - AttributeName: cve_id
+          AttributeType: S
+        - AttributeName: sort_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: assessment_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: HistoryIndex
+          KeySchema:
+            - AttributeName: entity_type
+              KeyType: HASH
+            - AttributeName: sort_key
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: CveHistoryIndex
+          KeySchema:
+            - AttributeName: cve_id
+              KeyType: HASH
+            - AttributeName: sort_key
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Project
+          Value: VulnGuard-AI
+
+  # ==========================================
+  # API Gateway HTTP API (v2)
+  # ==========================================
+  VulnGuardHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - "https://vulnguard.buildwithaveeck.com"
+          - "http://localhost:5173"
+        AllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+          - "X-Requested-With"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        MaxAge: 3600
+
+  # ==========================================
+  # Backend FastAPI Lambda Function (Mangum)
+  # ==========================================
+  VulnGuardApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../
+      Handler: backend.app.main.handler
+      Policies:
+        - Statement:
+            - Sid: DynamoDBTableScopedAccess
+              Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:Scan
+                - dynamodb:DescribeTable
+              Resource:
+                - !GetAtt VulnGuardAssessmentsTable.Arn
+                - !Sub "${VulnGuardAssessmentsTable.Arn}/index/*"
+            - Sid: BedrockNovaModelAccess
+              Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource:
+                - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-lite-v1:0"
+                - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0"
+      Events:
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VulnGuardHttpApi
+            Path: /{proxy+}
+            Method: ANY
+        ApiBase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VulnGuardHttpApi
+            Path: /
+            Method: ANY
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway HTTP API Endpoint URL"
+    Value: !Sub "https://${VulnGuardHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  DynamoDBTableName:
+    Description: "Name of the DynamoDB table"
+    Value: !Ref VulnGuardAssessmentsTable
+  DynamoDBTableArn:
+    Description: "ARN of the DynamoDB table"
+    Value: !GetAtt VulnGuardAssessmentsTable.Arn

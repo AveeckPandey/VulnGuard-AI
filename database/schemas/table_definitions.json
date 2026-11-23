@@ -1,0 +1,79 @@
+{
+  "TableName": "VulnGuardAssessments",
+  "BillingMode": "PAY_PER_REQUEST",
+  "KeySchema": [
+    {
+      "AttributeName": "assessment_id",
+      "KeyType": "HASH"
+    }
+  ],
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "assessment_id",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "entity_type",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "cve_id",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "sort_key",
+      "AttributeType": "S"
+    }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "HistoryIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "entity_type",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "sort_key",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    },
+    {
+      "IndexName": "CveHistoryIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "cve_id",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "sort_key",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    }
+  ],
+  "PointInTimeRecoverySpecification": {
+    "PointInTimeRecoveryEnabled": true
+  },
+  "SSESpecification": {
+    "Enabled": true,
+    "SSEType": "KMS"
+  },
+  "Tags": [
+    {
+      "Key": "Project",
+      "Value": "VulnGuard-AI"
+    },
+    {
+      "Key": "ManagedBy",
+      "Value": "AWS-SAM"
+    }
+  ]
+}
