@@ -48,10 +48,11 @@ class BedrockExplainer:
             logger.info(f"[Bedrock] Generating deterministic explanation for {cve_id} (simulated/offline mode).")
             return self._build_deterministic_remediation(cve_id, intel, risk_score, system_context)
 
-        # 2. Priority 1: NVIDIA Nemotron AI (if configured)
-        if settings.NVIDIA_API_KEY:
+        # 2. Priority 1: NVIDIA Nemotron AI (if configured via env or SSM)
+        api_key = settings.get_nvidia_api_key()
+        if api_key:
             try:
-                return await self._invoke_nvidia_nemotron(cve_id, intel, risk_score, system_context)
+                return await self._invoke_nvidia_nemotron(cve_id, intel, risk_score, system_context, api_key=api_key)
             except Exception as nvd_err:
                 logger.warning(f"[NVIDIA Nemotron] API invocation failed ({nvd_err}). Trying fallback/Bedrock.")
 
@@ -75,15 +76,17 @@ class BedrockExplainer:
         cve_id: str,
         intel: AggregatedIntel,
         risk_score: RiskScoreBreakdown,
-        system_context: str | None
+        system_context: str | None,
+        api_key: str | None = None
     ) -> AiRemediation:
         """Invokes NVIDIA Nemotron API for evidence-grounded vulnerability remediation."""
         prompt = self._build_prompt(cve_id, intel, risk_score, system_context)
+        active_key = api_key or settings.get_nvidia_api_key()
 
         import httpx
         url = "https://integrate.api.nvidia.com/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {settings.NVIDIA_API_KEY}",
+            "Authorization": f"Bearer {active_key}",
             "Content-Type": "application/json",
             "Accept": "application/json"
         }

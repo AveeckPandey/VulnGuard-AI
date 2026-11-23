@@ -1,0 +1,27 @@
+# Ignore frontend and web bundles
+frontend/
+node_modules/
+
+# Ignore tests and local caches
+.pytest_cache/
+backend/tests/
+test_*.py
+*.db
+*.sqlite*
+.coverage
+htmlcov/
+
+# Ignore local env and secrets
+.env*
+*.log
+
+# Ignore git and IDE
+.git/
+.github/
+.vscode/
+.idea/
+
+# Ignore documentation and artifacts
+*.md
+*.png
+*.jpg

@@ -2,7 +2,13 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   VulnGuard AI - Serverless Architecture
-  FastAPI Lambda (Mangum), Amazon DynamoDB (VulnGuardAssessments), Amazon Bedrock Nova, and Amazon API Gateway HTTP API v2.
+  FastAPI Lambda (Mangum), Amazon DynamoDB (VulnGuardAssessments), NVIDIA Nemotron 3.5 & Amazon API Gateway HTTP API v2.
+
+Parameters:
+  ExistingDynamoDbTableName:
+    Type: String
+    Default: VulnGuardAssessments
+    Description: Name of the existing pre-created DynamoDB table for VulnGuard assessments
 
 Globals:
   Function:
@@ -15,58 +21,14 @@ Globals:
         ENVIRONMENT: production
         DEBUG: "false"
         DATABASE_BACKEND: dynamodb
-        DYNAMODB_TABLE_NAME: !Ref VulnGuardAssessmentsTable
-        AWS_REGION: !Ref AWS::Region
+        DYNAMODB_TABLE_NAME: !Ref ExistingDynamoDbTableName
         BEDROCK_MODEL_ID: amazon.nova-lite-v1:0
         USE_BEDROCK_MOCK: "false"
-        CORS_ORIGINS: '["https://vulnguard.buildwithaveeck.com","http://localhost:5173"]'
+        NVIDIA_MODEL_ID: nvidia/nemotron-3.5-bolt-e4b
+        SSM_NVIDIA_API_KEY_PARAM: /vulnguard/nvidia_api_key
+        CORS_ORIGINS: '["https://vulnguard-ai.buildwithaveeck.com","https://vulnguard.buildwithaveeck.com","http://localhost:5173","http://127.0.0.1:5173"]'
 
 Resources:
-  # ==========================================
-  # DynamoDB Assessments & History Table
-  # ==========================================
-  VulnGuardAssessmentsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: VulnGuardAssessments
-      BillingMode: PAY_PER_REQUEST
-      PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true
-      SSESpecification:
-        SSEEnabled: true
-      AttributeDefinitions:
-        - AttributeName: assessment_id
-          AttributeType: S
-        - AttributeName: entity_type
-          AttributeType: S
-        - AttributeName: cve_id
-          AttributeType: S
-        - AttributeName: sort_key
-          AttributeType: S
-      KeySchema:
-        - AttributeName: assessment_id
-          KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: HistoryIndex
-          KeySchema:
-            - AttributeName: entity_type
-              KeyType: HASH
-            - AttributeName: sort_key
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
-        - IndexName: CveHistoryIndex
-          KeySchema:
-            - AttributeName: cve_id
-              KeyType: HASH
-            - AttributeName: sort_key
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
-      Tags:
-        - Key: Project
-          Value: VulnGuard-AI
-
   # ==========================================
   # API Gateway HTTP API (v2)
   # ==========================================
@@ -75,8 +37,10 @@ Resources:
     Properties:
       CorsConfiguration:
         AllowOrigins:
+          - "https://vulnguard-ai.buildwithaveeck.com"
           - "https://vulnguard.buildwithaveeck.com"
           - "http://localhost:5173"
+          - "http://127.0.0.1:5173"
         AllowHeaders:
           - "Content-Type"
           - "Authorization"
@@ -93,7 +57,7 @@ Resources:
   VulnGuardApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../
+      CodeUri: ../../build-lambda
       Handler: backend.app.main.handler
       Policies:
         - Statement:
@@ -106,8 +70,15 @@ Resources:
                 - dynamodb:Scan
                 - dynamodb:DescribeTable
               Resource:
-                - !GetAtt VulnGuardAssessmentsTable.Arn
-                - !Sub "${VulnGuardAssessmentsTable.Arn}/index/*"
+                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingDynamoDbTableName}"
+                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingDynamoDbTableName}/index/*"
+            - Sid: SSMParameterStoreAccess
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/vulnguard/*"
             - Sid: BedrockNovaModelAccess
               Effect: Allow
               Action:
@@ -134,8 +105,8 @@ Outputs:
     Description: "API Gateway HTTP API Endpoint URL"
     Value: !Sub "https://${VulnGuardHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
   DynamoDBTableName:
-    Description: "Name of the DynamoDB table"
-    Value: !Ref VulnGuardAssessmentsTable
+    Description: "Name of the existing DynamoDB table"
+    Value: !Ref ExistingDynamoDbTableName
   DynamoDBTableArn:
     Description: "ARN of the DynamoDB table"
-    Value: !GetAtt VulnGuardAssessmentsTable.Arn
+    Value: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingDynamoDbTableName}"

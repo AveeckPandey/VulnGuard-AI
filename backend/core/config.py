@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "https://vulnguard-ai.buildwithaveeck.com",
         "https://vulnguard.buildwithaveeck.com",
     ]
 
@@ -81,6 +82,28 @@ class Settings(BaseSettings):
     # NVIDIA Nemotron AI
     NVIDIA_API_KEY: str = ""
     NVIDIA_MODEL_ID: str = "nvidia/nemotron-3.5-bolt-e4b"
+    SSM_NVIDIA_API_KEY_PARAM: str = "/vulnguard/nvidia_api_key"
 
+    def get_nvidia_api_key(self) -> str:
+        """Returns the NVIDIA API key from environment variable or AWS SSM Parameter Store (cached)."""
+        if self.NVIDIA_API_KEY.strip():
+            return self.NVIDIA_API_KEY.strip()
+        
+        # Check global module-level cache
+        global _CACHED_SSM_NVIDIA_KEY
+        if _CACHED_SSM_NVIDIA_KEY:
+            return _CACHED_SSM_NVIDIA_KEY
+            
+        try:
+            import boto3
+            ssm = boto3.client("ssm", region_name=self.AWS_REGION)
+            response = ssm.get_parameter(Name=self.SSM_NVIDIA_API_KEY_PARAM, WithDecryption=True)
+            _CACHED_SSM_NVIDIA_KEY = response["Parameter"]["Value"].strip()
+            return _CACHED_SSM_NVIDIA_KEY
+        except Exception:
+            return ""
+
+
+_CACHED_SSM_NVIDIA_KEY: str = ""
 
 settings = Settings()

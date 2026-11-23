@@ -1,3 +1,8 @@
+# Build and Packaging
+build-lambda/
+test_lambda_pkg/
+database/infrastructure/packaged.yaml
+
 # Python
 __pycache__/
 *.py[cod]

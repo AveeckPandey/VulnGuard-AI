@@ -1,0 +1,1 @@
+# VulnGuard AI - Fixtures package
