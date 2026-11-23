@@ -64,3 +64,14 @@ export function getPriorityStyles(priority: PriorityLevel) {
       };
   }
 }
+
+export function formatUtcTimestamp(isoString: string | null | undefined): string {
+  if (!isoString) return 'N/A';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    return d.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+  } catch {
+    return isoString;
+  }
+}

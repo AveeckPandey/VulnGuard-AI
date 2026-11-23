@@ -93,12 +93,12 @@ export const CveSearchBar: React.FC<CveSearchBarProps> = ({
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>Executing LangGraph...</span>
+                  <span>Executing LangGraph & Nemotron AI...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-sky-200" />
-                  <span>Analyze & Prioritize</span>
+                  <Sparkles className="w-4 h-4 text-cyan-200" />
+                  <span>Analyze Vulnerability</span>
                 </>
               )}
             </button>

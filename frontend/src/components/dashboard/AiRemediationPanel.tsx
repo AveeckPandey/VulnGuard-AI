@@ -32,13 +32,19 @@ export const AiRemediationPanel: React.FC<AiRemediationPanelProps> = ({
         <div className="flex items-center space-x-2 text-xs">
           <span className="text-slate-400">Inference Engine:</span>
           {remediation.is_fallback_deterministic ? (
-            <span className="px-2.5 py-1 rounded-full bg-slate-800 text-amber-400 border border-amber-500/30 font-mono text-[11px] flex items-center space-x-1.5">
-              <Cpu className="w-3.5 h-3.5" />
-              <span>Deterministic Heuristics Fallback</span>
+            <span className="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-mono text-[11px] flex items-center space-x-1.5">
+              <Cpu className="w-3.5 h-3.5 text-amber-400" />
+              <span>Rule-Based Remediation — AI Unavailable</span>
+            </span>
+          ) : remediation.model_used && remediation.model_used.toLowerCase().includes('nemotron') ? (
+            <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-mono text-[11px] flex items-center space-x-1.5 shadow-sm shadow-emerald-500/20">
+              <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="font-semibold">Powered by NVIDIA Nemotron</span>
+              <span className="text-emerald-500/80 hidden sm:inline">({remediation.model_used})</span>
             </span>
           ) : (
             <span className="px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30 font-mono text-[11px] flex items-center space-x-1.5">
-              <Cpu className="w-3.5 h-3.5" />
+              <Cpu className="w-3.5 h-3.5 text-sky-400" />
               <span>Amazon Bedrock ({remediation.model_used})</span>
             </span>
           )}

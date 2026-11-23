@@ -1,90 +1,158 @@
 import React from 'react';
-import { Shield, Activity, Wifi } from 'lucide-react';
+import { Shield, Activity, Wifi, RefreshCw, Menu, X, Cpu } from 'lucide-react';
+import { TabType } from './Sidebar';
 
 interface HeaderProps {
+  activeTab: TabType;
   isLiveMode: boolean;
   setIsLiveMode: (live: boolean) => void;
   systemHealth: string | null;
   intelFeeds: any;
+  onRefresh: () => void;
+  isRefreshing?: boolean;
+  mobileMenuOpen?: boolean;
+  setMobileMenuOpen?: (open: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  activeTab,
   isLiveMode,
   setIsLiveMode,
   systemHealth,
   intelFeeds,
+  onRefresh,
+  isRefreshing = false,
+  mobileMenuOpen = false,
+  setMobileMenuOpen,
 }) => {
   const isHealthy = systemHealth === 'healthy';
-  const kevCount = intelFeeds?.feeds?.cisa_kev?.known_exploited_cves_count || 0;
+  const kevCount = intelFeeds?.feeds?.cisa_kev?.known_exploited_cves_count || 1790;
+
+  const pageTitles: Record<TabType, { title: string; subtitle: string }> = {
+    overview: {
+      title: 'Security Operations Overview',
+      subtitle: 'Global vulnerability posture & threat telemetry',
+    },
+    analyzer: {
+      title: 'CVE Intelligence & Prioritization',
+      subtitle: 'Deterministic 0–100 risk scoring with NVIDIA Nemotron AI',
+    },
+    history: {
+      title: 'Assessment Audit Log',
+      subtitle: 'Persisted DynamoDB investigations & triage history',
+    },
+    analytics: {
+      title: 'Vulnerability Risk Analytics',
+      subtitle: 'Multi-factor risk distributions & exposure heatmaps',
+    },
+    settings: {
+      title: 'System & Cloud Settings',
+      subtitle: 'Threat intelligence cache, AI models & AWS infrastructure',
+    },
+  };
+
+  const current = pageTitles[activeTab] || pageTitles.overview;
 
   return (
-    <header className="border-b border-border bg-[#0b1120]/80 backdrop-blur-md sticky top-0 z-50">
+    <header className="border-b border-slate-800/80 bg-[#080d19]/90 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand / Logo */}
-        <div className="flex items-center space-x-3">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-              <Shield className="w-5 h-5 text-white" />
+        {/* Left: Mobile Menu Toggle + Brand + Page Title */}
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          {setMobileMenuOpen && (
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white"
+              aria-label="Toggle Navigation"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          )}
+
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#080d19] animate-pulse" />
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background animate-pulse" />
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+                  VulnGuard AI
+                </span>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center space-x-1">
+                  <Cpu className="w-2.5 h-2.5" />
+                  <span>Nemotron</span>
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 hidden xl:block">
+                AI CVE Intelligence & Deterministic Prioritization
+              </p>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-sky-400 bg-clip-text text-transparent">
-                VulnGuard AI
-              </span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                Nova AI
-              </span>
+
+          {/* Current Page Title Separator (Hidden on small mobile) */}
+          <div className="hidden md:flex items-center space-x-2 pl-4 border-l border-slate-800">
+            <div>
+              <h2 className="text-sm font-bold text-slate-200">{current.title}</h2>
+              <p className="text-[11px] text-slate-500">{current.subtitle}</p>
             </div>
-            <p className="text-xs text-slate-400 hidden sm:block">
-              AI-Powered CVE Intelligence & Deterministic Prioritization
-            </p>
           </div>
         </div>
 
-        {/* Live Intel Feeds & Status */}
-        <div className="flex items-center space-x-3 sm:space-x-5">
+        {/* Right: Live Intel Feeds & Status */}
+        <div className="flex items-center space-x-2 sm:space-x-3">
           {/* Feed Pills */}
-          <div className="hidden md:flex items-center space-x-2 text-xs">
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/50 text-slate-300">
+          <div className="hidden lg:flex items-center space-x-1.5 text-xs">
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               <span>NVD 2.0</span>
             </div>
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/50 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               <span>EPSS v3</span>
             </div>
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/50 text-slate-300">
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300">
               <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-              <span>KEV ({kevCount > 0 ? kevCount : '1.7k+'})</span>
+              <span>CISA KEV ({kevCount})</span>
             </div>
           </div>
+
+          {/* Refresh Button */}
+          <button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all disabled:opacity-50"
+            title="Refresh Intelligence and Assessments"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
+          </button>
 
           {/* Mode Switcher */}
           <button
             onClick={() => setIsLiveMode(!isLiveMode)}
-            className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
               isLiveMode
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
                 : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
             }`}
-            title="Toggle between Live Upstream APIs and Offline Demo Fixtures"
+            title="Toggle between Live Upstream Feeds and Simulated Offline Fixtures"
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>{isLiveMode ? 'LIVE MODE' : 'DEMO MODE'}</span>
+            <span className="hidden sm:inline">{isLiveMode ? 'LIVE' : 'DEMO'}</span>
           </button>
 
           {/* Health Indicator */}
           <div
-            className={`flex items-center space-x-1.5 text-xs px-2.5 py-1 rounded-lg border ${
+            className={`flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-xl border ${
               isHealthy
-                ? 'bg-slate-800/60 border-slate-700 text-slate-300'
+                ? 'bg-slate-900/80 border-slate-800 text-slate-300'
                 : 'bg-red-500/10 border-red-500/30 text-red-400'
             }`}
+            title={isHealthy ? 'FastAPI & DynamoDB Online' : 'Backend Unreachable'}
           >
             <Wifi className={`w-3.5 h-3.5 ${isHealthy ? 'text-emerald-400' : 'text-red-400 animate-pulse'}`} />
-            <span className="hidden sm:inline">{isHealthy ? 'API Online' : 'Connecting...'}</span>
+            <span className="hidden sm:inline">{isHealthy ? 'API Online' : 'Offline'}</span>
           </div>
         </div>
       </div>
