@@ -76,6 +76,11 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
     BEDROCK_MODEL_ID: str = "amazon.nova-lite-v1:0"
     USE_BEDROCK_MOCK: bool = False
+    AWS_BEARER_TOKEN_BEDROCK: str = ""
+
+    # NVIDIA Nemotron AI
+    NVIDIA_API_KEY: str = ""
+    NVIDIA_MODEL_ID: str = "nvidia/nemotron-3.5-bolt-e4b"
 
 
 settings = Settings()

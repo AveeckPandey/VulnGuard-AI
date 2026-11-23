@@ -48,9 +48,16 @@ class BedrockExplainer:
             logger.info(f"[Bedrock] Generating deterministic explanation for {cve_id} (simulated/offline mode).")
             return self._build_deterministic_remediation(cve_id, intel, risk_score, system_context)
 
-        # 2. Attempt Amazon Bedrock Nova
+        # 2. Priority 1: NVIDIA Nemotron AI (if configured)
+        if settings.NVIDIA_API_KEY:
+            try:
+                return await self._invoke_nvidia_nemotron(cve_id, intel, risk_score, system_context)
+            except Exception as nvd_err:
+                logger.warning(f"[NVIDIA Nemotron] API invocation failed ({nvd_err}). Trying fallback/Bedrock.")
+
+        # 3. Priority 2: Amazon Bedrock Nova
         client = self._get_client()
-        if client is not None:
+        if client is not None or settings.AWS_BEARER_TOKEN_BEDROCK:
             try:
                 return await self._invoke_bedrock_nova(cve_id, intel, risk_score, system_context)
             except (ClientError, BotoCoreError, NoCredentialsError) as aws_err:
@@ -58,10 +65,77 @@ class BedrockExplainer:
             except Exception as err:
                 logger.warning(f"[Bedrock] Unexpected error invoking Bedrock: {err}. Falling back to deterministic rules.")
 
-        # 3. Deterministic Fallback
+        # 4. Deterministic Fallback
         return self._build_deterministic_remediation(
             cve_id, intel, risk_score, system_context, is_fallback=True
         )
+
+    async def _invoke_nvidia_nemotron(
+        self,
+        cve_id: str,
+        intel: AggregatedIntel,
+        risk_score: RiskScoreBreakdown,
+        system_context: str | None
+    ) -> AiRemediation:
+        """Invokes NVIDIA Nemotron API for evidence-grounded vulnerability remediation."""
+        prompt = self._build_prompt(cve_id, intel, risk_score, system_context)
+
+        import httpx
+        url = "https://integrate.api.nvidia.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {settings.NVIDIA_API_KEY}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        payload = {
+            "model": settings.NVIDIA_MODEL_ID,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are VulnGuard AI, a senior cybersecurity expert. Analyze the vulnerability data and output ONLY "
+                        "a valid JSON object matching the requested schema with no surrounding prose or markdown formatting."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "max_tokens": 1024,
+            "temperature": 0.1
+        }
+
+        async with httpx.AsyncClient(timeout=35.0) as http_client:
+            resp = await http_client.post(url, headers=headers, json=payload)
+            if resp.status_code != 200:
+                raise RuntimeError(f"NVIDIA API returned status {resp.status_code}: {resp.text}")
+
+            result = resp.json()
+            output_text = result["choices"][0]["message"].get("content")
+            if not output_text:
+                raise RuntimeError("NVIDIA Nemotron returned empty content.")
+
+            cleaned = output_text.strip()
+            if "```json" in cleaned:
+                cleaned = cleaned.split("```json")[1].split("```")[0].strip()
+            elif "```" in cleaned:
+                cleaned = cleaned.split("```")[1].split("```")[0].strip()
+
+            data = json.loads(cleaned)
+            citations = self._build_citations(intel)
+
+            logger.info(f"[NVIDIA Nemotron] Successfully generated AI remediation roadmap for {cve_id}")
+            return AiRemediation(
+                executive_summary=data.get("executive_summary", "Security analysis completed."),
+                technical_impact=data.get("technical_impact", "Technical impact documented."),
+                exploitation_assessment=data.get("exploitation_assessment", "Exploitation assessed."),
+                remediation_steps=data.get("remediation_steps", ["Apply official vendor security patches."]),
+                mitigation_workarounds=data.get("mitigation_workarounds", ["Enforce network perimeter access controls."]),
+                evidence_citations=citations,
+                model_used=settings.NVIDIA_MODEL_ID,
+                is_fallback_deterministic=False,
+            )
 
     async def _invoke_bedrock_nova(
         self,
@@ -87,21 +161,47 @@ class BedrockExplainer:
             }
         }
 
-        # Run synchronous Boto3 call in executor to keep FastAPI async
-        import asyncio
-        loop = asyncio.get_running_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: self._client.invoke_model(
-                modelId=settings.BEDROCK_MODEL_ID,
-                body=json.dumps(body),
-                contentType="application/json",
-                accept="application/json"
-            )
-        )
+        output_text = None
 
-        response_body = json.loads(response["body"].read().decode("utf-8"))
-        output_text = response_body["output"]["message"]["content"][0]["text"]
+        # Option A: Direct invocation via AWS Bedrock Bearer Token / API Key
+        if settings.AWS_BEARER_TOKEN_BEDROCK:
+            try:
+                import httpx
+                url = f"https://bedrock-runtime.{settings.AWS_REGION}.amazonaws.com/model/{settings.BEDROCK_MODEL_ID}/invoke"
+                headers = {
+                    "Authorization": f"Bearer {settings.AWS_BEARER_TOKEN_BEDROCK}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                }
+                async with httpx.AsyncClient(timeout=25.0) as http_client:
+                    resp = await http_client.post(url, headers=headers, json=body)
+                    if resp.status_code == 200:
+                        response_body = resp.json()
+                        output_text = response_body["output"]["message"]["content"][0]["text"]
+                        logger.info(f"[Bedrock] Successfully invoked Nova via Bearer token API key.")
+                    else:
+                        logger.warning(f"[Bedrock Bearer] API returned status {resp.status_code}: {resp.text[:120]}")
+            except Exception as bearer_err:
+                logger.warning(f"[Bedrock Bearer] Error calling Bedrock via Bearer token: {bearer_err}")
+
+        # Option B: Standard Boto3 SigV4 invocation
+        if output_text is None and self._client is not None:
+            import asyncio
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self._client.invoke_model(
+                    modelId=settings.BEDROCK_MODEL_ID,
+                    body=json.dumps(body),
+                    contentType="application/json",
+                    accept="application/json"
+                )
+            )
+            response_body = json.loads(response["body"].read().decode("utf-8"))
+            output_text = response_body["output"]["message"]["content"][0]["text"]
+
+        if output_text is None:
+            raise RuntimeError("Bedrock invocation returned no output text.")
 
         # Parse JSON from model output
         try:
