@@ -70,7 +70,6 @@ Resources:
             IdentitySource: "$request.header.Authorization"
           ApiKeyAuthorizer:
             FunctionArn: !GetAtt VulnGuardAuthorizerFunction.Arn
-            FunctionPayloadType: REQUEST
             EnableSimpleResponses: true
             AuthorizerPayloadFormatVersion: "2.0"
 
@@ -125,6 +124,12 @@ Resources:
         - "http://localhost:5173"
       SupportedIdentityProviders:
         - COGNITO
+
+  VulnGuardUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub "vulnguard-${AWS::AccountId}-${AWS::StackName}"
+      UserPoolId: !Ref VulnGuardUserPool
 
   # ==========================================
   # API Gateway Lambda Authorizer Permission
@@ -211,6 +216,14 @@ Resources:
             Method: GET
             Auth:
               Authorizer: CognitoJwtAuthorizer
+        ApiAssessmentsPaged:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VulnGuardHttpApi
+            Path: /api/assessments/paged
+            Method: GET
+            Auth:
+              Authorizer: CognitoJwtAuthorizer
         ApiAssessmentDetail:
           Type: HttpApi
           Properties:
@@ -256,3 +269,6 @@ Outputs:
   CognitoAppClientId:
     Description: "Amazon Cognito Public App Client ID for SPA"
     Value: !Ref VulnGuardUserPoolClient
+  CognitoHostedDomain:
+    Description: "Cognito hosted sign-in base URL for VITE_COGNITO_DOMAIN"
+    Value: !Sub "https://${VulnGuardUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"

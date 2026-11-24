@@ -1,17 +1,4 @@
 """
-VulnGuard AI - API Dependencies
-Dependency injection for FastAPI endpoints.
-"""
-import hmac
-from typing import Optional, Dict, Any
-from fastapi import Depends, HTTPException, Security, status
-from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
-from database.interface import AssessmentRepository
-from database.factory import get_repository
-from backend.core.config import settings
-from backend.core.logging import logger
-
-"""
 VulnGuard AI - API Dependencies & Multi-Tenant Identity Verification
 Implements strict Cognito JWT validation, M2M service authentication, and user workspace isolation.
 """
@@ -80,7 +67,10 @@ async def get_current_user(
     if isinstance(aws_event, dict):
         jwt_authorizer = aws_event.get("requestContext", {}).get("authorizer", {}).get("jwt", {})
         claims = jwt_authorizer.get("claims", {})
-        if claims and claims.get("sub"):
+        if (claims and claims.get("sub") and claims.get("token_use") == "access"
+                and settings.COGNITO_APP_CLIENT_ID
+                and claims.get("client_id") == settings.COGNITO_APP_CLIENT_ID
+                and claims.get("iss") == settings.cognito_issuer):
             sub = claims["sub"].strip()
             return {
                 "sub": sub,
@@ -94,15 +84,7 @@ async def get_current_user(
     # 2. Machine-to-Machine (M2M) Service Account Authentication
     # ---------------------------------------------------------
     active_m2m_key = service_key or api_key
-    configured_m2m = settings.get_m2m_api_key().strip() or settings.get_api_key().strip()
-
-    # Fail-closed check if strict auth is required but server has no credential configured
-    if settings.is_auth_required and not settings.COGNITO_USER_POOL_ID and not configured_m2m:
-        logger.critical("[Security] Strict authentication required but neither Cognito nor M2M credentials configured. Failing closed.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Authentication service misconfigured: missing server credential.",
-        )
+    configured_m2m = (settings.get_m2m_api_key().strip() or settings.get_api_key().strip()) if active_m2m_key else ""
 
     if active_m2m_key:
         if configured_m2m and hmac.compare_digest(active_m2m_key.strip(), configured_m2m):
@@ -140,20 +122,22 @@ async def get_current_user(
                         "verify_exp": True,
                         "verify_iss": True,
                         "verify_signature": True,
+                        # Cognito access tokens identify the SPA in client_id, not aud.
+                        "verify_aud": False,
                     }
                 )
 
                 # Validate token_use and client_id
                 token_use = claims.get("token_use")
-                if token_use not in ("access", "id"):
+                if token_use != "access":
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Invalid token: 'token_use' must be 'access' or 'id'.",
+                        detail="A Cognito access token is required.",
                         headers={"WWW-Authenticate": "Bearer error=\"invalid_token\""},
                     )
 
-                client_id = claims.get("client_id") if token_use == "access" else claims.get("aud")
-                if settings.COGNITO_APP_CLIENT_ID and client_id != settings.COGNITO_APP_CLIENT_ID:
+                client_id = claims.get("client_id")
+                if not settings.COGNITO_APP_CLIENT_ID or client_id != settings.COGNITO_APP_CLIENT_ID:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Invalid token: intended audience / client_id mismatch.",
@@ -175,17 +159,17 @@ async def get_current_user(
                     "username": claims.get("cognito:username") or claims.get("username"),
                     "is_service": False,
                 }
-            except (PyJWTError, Exception) as jwt_err:
-                logger.warning(f"[Auth] Cognito token validation failed: {jwt_err}")
+            except Exception as jwt_err:
+                logger.warning(f"[Auth] Cognito token validation failed: {type(jwt_err).__name__}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=f"Invalid Cognito authentication token: {str(jwt_err)}",
+                    detail="Invalid Cognito authentication token.",
                     headers={"WWW-Authenticate": "Bearer error=\"invalid_token\""},
                 )
 
         # In testing or local development without live Cognito reachable,
         # support standard simulated test tokens and HS256 / unverified test tokens
-        if settings.ENVIRONMENT in ("testing", "development"):
+        if settings.ENVIRONMENT in ("testing", "development") and not settings.is_auth_required and not issuer:
             # Check for simulated test tokens
             try:
                 unverified = jwt.decode(token, options={"verify_signature": False})

@@ -135,7 +135,7 @@ def test_dynamodb_get_assessment_by_id_found_and_missing():
 
 
 def test_dynamodb_chronological_history_query():
-    """Validates chronological history query using HistoryIndex."""
+    """Validates tenant-scoped chronological query using UserHistoryIndex."""
     mock_resource = MagicMock()
     mock_table = MagicMock()
     mock_resource.Table.return_value = mock_table
@@ -170,21 +170,23 @@ def test_dynamodb_chronological_history_query():
     }
 
     repo = DynamoDBAssessmentRepository(table_name="VulnGuardAssessments", boto3_resource=mock_resource)
-    history = repo.list_recent_assessments(limit=10)
+    history, cursor = repo.list_recent_assessments(owner_user_id="user-a", limit=10)
 
     assert len(history) == 2
+    assert cursor is None
     assert history[0].id == "vg-2"
     assert history[0].cve_id == "CVE-2023-34362"
     assert history[0].priority_level == PriorityLevel.CRITICAL
     assert history[1].id == "vg-1"
     mock_table.query.assert_called_once()
     query_args = mock_table.query.call_args[1]
-    assert query_args["IndexName"] == "HistoryIndex"
+    assert query_args["IndexName"] == "UserHistoryIndex"
+    assert query_args["ExpressionAttributeValues"][":uid"] == "user-a"
     assert query_args["ScanIndexForward"] is False
 
 
 def test_dynamodb_per_cve_history_query():
-    """Validates per-CVE history query using CveHistoryIndex."""
+    """Validates tenant-scoped per-CVE query using UserCveHistoryIndex."""
     mock_resource = MagicMock()
     mock_table = MagicMock()
     mock_resource.Table.return_value = mock_table
@@ -207,14 +209,14 @@ def test_dynamodb_per_cve_history_query():
     }
 
     repo = DynamoDBAssessmentRepository(table_name="VulnGuardAssessments", boto3_resource=mock_resource)
-    items = repo.list_assessments_by_cve("CVE-2021-44228", limit=5)
+    items = repo.list_assessments_by_cve("CVE-2021-44228", owner_user_id="user-a", limit=5)
 
     assert len(items) == 1
     assert items[0].cve_id == "CVE-2021-44228"
     mock_table.query.assert_called_once()
     query_args = mock_table.query.call_args[1]
-    assert query_args["IndexName"] == "CveHistoryIndex"
-    assert query_args["ExpressionAttributeValues"][":cid"] == "CVE-2021-44228"
+    assert query_args["IndexName"] == "UserCveHistoryIndex"
+    assert query_args["ExpressionAttributeValues"][":ucid"] == "user-a#CVE-2021-44228"
 
 
 def test_dynamodb_pagination_with_last_evaluated_key():
@@ -226,7 +228,7 @@ def test_dynamodb_pagination_with_last_evaluated_key():
 
     repo = DynamoDBAssessmentRepository(table_name="VulnGuardAssessments", boto3_resource=mock_resource)
     start_key = json.dumps({"assessment_id": "vg-last-key", "sort_key": "2026-11-23#vg-last-key"})
-    repo.list_recent_assessments(limit=5, last_evaluated_key=start_key)
+    repo.list_recent_assessments(owner_user_id="user-a", limit=5, last_evaluated_key=start_key)
 
     query_args = mock_table.query.call_args[1]
     assert "ExclusiveStartKey" in query_args

@@ -7,7 +7,7 @@ import sqlite3
 import json
 import os
 import threading
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from backend.core.config import settings
 from backend.core.logging import logger
 from backend.core.exceptions import DatabaseError
@@ -187,53 +187,12 @@ class SQLiteAssessmentRepository(AssessmentRepository):
                 created_at=row["created_at"],
             ))
         return summaries
-        for r in rows:
-            summaries.append(AssessmentSummary(
-                id=r["id"],
-                cve_id=r["cve_id"],
-                priority_level=PriorityLevel(r["priority_level"]),
-                total_score=r["total_score"],
-                cvss_base_score=r["cvss_base_score"],
-                epss_probability=r["epss_probability"],
-                is_known_exploited=bool(r["is_known_exploited"]) if r["is_known_exploited"] is not None else None,
-                asset_criticality=AssetCriticality(r["asset_criticality"]),
-                internet_exposure=InternetExposure(r["internet_exposure"]),
-                created_at=r["created_at"]
-            ))
-        return summaries
 
     # Backward-compatible convenience aliases
     def save(
         self, assessment: AssessmentResponse, owner_user_id: Optional[str] = None
     ) -> AssessmentResponse:
-        try:
-            return self.create_assessment(assessment, owner_user_id=owner_user_id)
-        except DatabaseError:
-            # Overwrite if called via save
-            effective_owner = owner_user_id if owner_user_id is not None else assessment.owner_user_id
-            assessment.owner_user_id = effective_owner
-            full_json = assessment.model_dump_json()
-            cvss = assessment.intelligence.nvd.cvss_base_score
-            epss = assessment.intelligence.epss.epss_probability
-            kev_val = assessment.intelligence.cisa_kev.is_known_exploited
-            is_kev = 1 if kev_val is True else (0 if kev_val is False else None)
-            with self._lock:
-                with self._get_connection() as conn:
-                    conn.execute("""
-                        INSERT OR REPLACE INTO assessments (
-                            id, cve_id, owner_user_id, priority_level, total_score,
-                            cvss_base_score, epss_probability, is_known_exploited,
-                            asset_criticality, internet_exposure, created_at, full_data
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        assessment.id, assessment.cve_id, effective_owner,
-                        assessment.risk_score.priority_level.value,
-                        assessment.risk_score.total_score, cvss, epss, is_kev,
-                        assessment.asset_criticality.value, assessment.internet_exposure.value,
-                        assessment.created_at, full_json
-                    ))
-                    conn.commit()
-            return assessment
+        return self.create_assessment(assessment, owner_user_id=owner_user_id)
 
     def save_assessment(
         self, assessment: AssessmentResponse, owner_user_id: Optional[str] = None
@@ -245,8 +204,4 @@ class SQLiteAssessmentRepository(AssessmentRepository):
     ) -> Optional[AssessmentResponse]:
         return self.get_assessment_by_id(assessment_id, owner_user_id=owner_user_id)
 
-    def list_recent(
-        self, owner_user_id: str = "", limit: int = 20, last_evaluated_key: Optional[str] = None
-    ) -> List[AssessmentSummary]:
-        items, _ = self.list_recent_assessments(owner_user_id=owner_user_id, limit=limit, last_evaluated_key=last_evaluated_key)
-        return items
+    # list_recent is inherited and requires an owner_user_id.

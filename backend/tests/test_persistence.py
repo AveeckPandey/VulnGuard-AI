@@ -104,10 +104,10 @@ def test_sqlite_save_and_retrieve(tmp_path):
     repo = SQLiteAssessmentRepository(db_path=db_file)
 
     assessment = create_dummy_assessment("vg-sql-100", "CVE-2021-44228")
-    saved = repo.save(assessment)
+    saved = repo.save(assessment, owner_user_id="test-user-a")
     assert saved.id == "vg-sql-100"
 
-    retrieved = repo.get_by_id("vg-sql-100")
+    retrieved = repo.get_by_id("vg-sql-100", owner_user_id="test-user-a")
     assert retrieved is not None
     assert retrieved.id == "vg-sql-100"
     assert retrieved.cve_id == "CVE-2021-44228"
@@ -116,6 +116,7 @@ def test_sqlite_save_and_retrieve(tmp_path):
     assert retrieved.intelligence.nvd.cvss_base_score == 10.0
     assert retrieved.intelligence.cisa_kev.is_known_exploited is True
     assert len(retrieved.remediation.remediation_steps) == 1
+    assert repo.get_by_id("vg-sql-100", owner_user_id="test-user-b") is None
 
 
 def test_sqlite_history_listing(tmp_path):
@@ -124,14 +125,28 @@ def test_sqlite_history_listing(tmp_path):
     repo = SQLiteAssessmentRepository(db_path=db_file)
 
     # Save multiple assessments
-    repo.save(create_dummy_assessment("vg-1", "CVE-2021-44228"))
-    repo.save(create_dummy_assessment("vg-2", "CVE-2023-38606"))
+    repo.save(create_dummy_assessment("vg-1", "CVE-2021-44228"), owner_user_id="test-user-a")
+    repo.save(create_dummy_assessment("vg-2", "CVE-2023-38606"), owner_user_id="test-user-a")
 
-    history = repo.list_recent(limit=10)
+    history = repo.list_recent(owner_user_id="test-user-a", limit=10)
     assert len(history) == 2
     ids = [item.id for item in history]
     assert "vg-1" in ids
     assert "vg-2" in ids
+    assert repo.list_recent(owner_user_id="test-user-b", limit=10) == []
+
+
+def test_sqlite_save_cannot_reassign_existing_assessment(tmp_path):
+    """A duplicate ID cannot overwrite another tenant's saved assessment."""
+    import pytest
+    from backend.core.exceptions import DatabaseError
+
+    repo = SQLiteAssessmentRepository(db_path=str(tmp_path / "isolation.db"))
+    repo.save(create_dummy_assessment("vg-shared"), owner_user_id="test-user-a")
+    with pytest.raises(DatabaseError):
+        repo.save(create_dummy_assessment("vg-shared"), owner_user_id="test-user-b")
+    assert repo.get_by_id("vg-shared", owner_user_id="test-user-b") is None
+    assert repo.get_by_id("vg-shared", owner_user_id="test-user-a") is not None
 
 
 def test_dynamodb_repository_save_and_get():

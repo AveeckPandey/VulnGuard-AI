@@ -143,8 +143,8 @@ def test_analyze_endpoint_authentication_matrix(client: TestClient, monkeypatch)
     - Missing credentials -> HTTP 401
     - Invalid credentials -> HTTP 401
     - Valid X-API-Key -> HTTP 201
-    - Valid Bearer token -> HTTP 201
-    - Missing server key when auth required -> HTTP 500 (Fail closed!)
+    - API key sent as Bearer token -> HTTP 401
+    - Missing server key when auth required -> HTTP 401
     """
     from backend.core.config import settings
 
@@ -177,9 +177,9 @@ def test_analyze_endpoint_authentication_matrix(client: TestClient, monkeypatch)
     res_valid_key = client.post("/api/analyze", json=payload, headers={"X-API-Key": "test-secret-key-12345"})
     assert res_valid_key.status_code == 201
 
-    # 1e. Valid Bearer token -> 201
+    # 1e. API key must not be accepted as a Cognito bearer token
     res_valid_bearer = client.post("/api/analyze", json=payload, headers={"Authorization": "Bearer test-secret-key-12345"})
-    assert res_valid_bearer.status_code == 201
+    assert res_valid_bearer.status_code == 401
 
     # 2. Fail closed: Production/Auth required but server API key is missing
     monkeypatch.setattr(settings, "REQUIRE_AUTH", True)
@@ -189,12 +189,11 @@ def test_analyze_endpoint_authentication_matrix(client: TestClient, monkeypatch)
 
     # Must reject even if client provides a token (no accepting arbitrary tokens!)
     res_fail_closed_with_token = client.post("/api/analyze", json=payload, headers={"X-API-Key": "random-token"})
-    assert res_fail_closed_with_token.status_code == 500
-    assert "missing server credential" in res_fail_closed_with_token.json()["detail"]
+    assert res_fail_closed_with_token.status_code == 401
 
     # Must reject anonymous callers (no failing open!)
     res_fail_closed_anon = client.post("/api/analyze", json=payload)
-    assert res_fail_closed_anon.status_code == 500
+    assert res_fail_closed_anon.status_code == 401
 
 
 def test_lambda_authorizer_handler():

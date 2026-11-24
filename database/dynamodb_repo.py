@@ -285,12 +285,4 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
             ))
         return summaries
 
-    # Backward-compatible aliases
-    def save(self, assessment: AssessmentResponse) -> AssessmentResponse:
-        return self.create_assessment(assessment)
-
-    def get_by_id(self, assessment_id: str) -> Optional[AssessmentResponse]:
-        return self.get_assessment_by_id(assessment_id)
-
-    def list_recent(self, limit: int = 20) -> List[AssessmentSummary]:
-        return self.list_recent_assessments(limit=limit)
+    # Use the owner-aware convenience methods inherited from AssessmentRepository.
