@@ -16,7 +16,7 @@ import { AssessmentHistoryTable } from './components/history/AssessmentHistoryTa
 import { AssessmentDetailModal } from './components/details/AssessmentDetailModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { apiClient, ApiError, getResolvedApiEndpointDisplay } from './api/client';
-import { authService, authManager } from './api/auth';
+import { authService, authManager, completeCognitoLogin } from './api/auth';
 import {
   AssessmentResponse,
   AssessmentSummary,
@@ -56,14 +56,13 @@ export function App() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Synchronize client token with authState
+  // Complete the Cognito authorization-code exchange after the hosted login redirects back.
   useEffect(() => {
-    if (authState.session?.accessToken) {
-      apiClient.setUserAuthToken(authState.session.accessToken);
-    } else {
-      apiClient.setUserAuthToken(null);
-    }
-  }, [authState]);
+    if (window.location.pathname !== '/callback') return;
+    completeCognitoLogin()
+      .then(session => { if (session) setAuthState(authManager.getInitialState()); })
+      .catch(err => setErrorMessage(err instanceof Error ? err.message : 'Sign-in failed.'));
+  }, []);
 
   const fetchSystemStatus = useCallback(async () => {
     try {
@@ -78,9 +77,10 @@ export function App() {
 
   const loadHistory = useCallback(async () => {
     setIsRefreshing(true);
+    const requestToken = authManager.getAccessToken();
     try {
       const data = await apiClient.listAssessments(50);
-      setHistory(data);
+      if (requestToken === authManager.getAccessToken()) setHistory(data);
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 401) {
         console.info('Authentication required to load assessment history.');
@@ -97,15 +97,23 @@ export function App() {
       setUserWorkspace(null);
       return;
     }
+    const requestToken = authManager.getAccessToken();
     try {
       const summary = await apiClient.getUserWorkspace();
-      setUserWorkspace(summary);
+      if (requestToken === authManager.getAccessToken()) setUserWorkspace(summary);
     } catch (err) {
       console.warn('Could not load user workspace summary:', err);
     }
-  }, [authState.isAuthenticated]);
+  }, [authState.isAuthenticated, authState.session?.accessToken]);
 
   // Initial Data Fetch & Reload on Auth State Change
+  useEffect(() => {
+    setHistory([]);
+    setUserWorkspace(null);
+    setCurrentAssessment(null);
+    setDetailedAssessment(null);
+  }, [authState.user?.sub, authState.session?.accessToken]);
+
   useEffect(() => {
     fetchSystemStatus();
     loadHistory();
@@ -113,11 +121,13 @@ export function App() {
   }, [fetchSystemStatus, loadHistory, loadWorkspace]);
 
   const handleAnalyze = async (request: AssessmentRequest) => {
+    const requestToken = authManager.getAccessToken();
     setIsLoading(true);
     setErrorMessage(null);
     setCurrentAssessment(null);
     try {
       const result = await apiClient.analyzeVulnerability(request);
+      if (requestToken !== authManager.getAccessToken()) return;
       setCurrentAssessment(result);
       // Refresh history & workspace summary from DynamoDB
       loadHistory();
@@ -151,21 +161,15 @@ export function App() {
     setExposure(expo);
     setSystemContext(ctx);
     setActiveTab('analyzer');
-    handleAnalyze({
-      cve_id: cveId,
-      asset_criticality: crit,
-      internet_exposure: expo,
-      system_context: ctx,
-      simulate_offline: !isLiveMode,
-    });
   };
 
   const handleSelectAssessment = async (id: string) => {
+    const requestToken = authManager.getAccessToken();
     setIsLoading(true);
     setErrorMessage(null);
     try {
       const result = await apiClient.getAssessment(id);
-      setDetailedAssessment(result);
+      if (requestToken === authManager.getAccessToken()) setDetailedAssessment(result);
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 404) {
         setErrorMessage(`Assessment ${id} not found in your private workspace partition.`);
@@ -193,7 +197,7 @@ export function App() {
   };
 
   const handleSignOut = () => {
-    authService.clearSession();
+    authService.signOut();
     setAuthState({
       isAuthenticated: false,
       isLoading: false,
@@ -204,6 +208,7 @@ export function App() {
     setHistory([]);
     setUserWorkspace(null);
     setCurrentAssessment(null);
+    setDetailedAssessment(null);
   };
 
   return (

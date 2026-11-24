@@ -8,6 +8,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="starlette
 
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
+from functools import lru_cache
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -118,5 +119,12 @@ async def health_check():
 # Include API routes
 app.include_router(api_router)
 
-# AWS Lambda Serverless Handler (Mangum)
-handler = Mangum(app, lifespan="off")
+# Construct the Lambda adapter only inside Lambda. Eager construction creates an
+# asyncio event loop on import and can block the local Windows test runner.
+@lru_cache(maxsize=1)
+def _lambda_adapter() -> Mangum:
+    return Mangum(app, lifespan="off")
+
+
+def handler(event, context):
+    return _lambda_adapter()(event, context)

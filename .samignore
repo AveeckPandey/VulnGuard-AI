@@ -1,6 +1,11 @@
 # Ignore frontend and web bundles
 frontend/
 node_modules/
+build-lambda/
+test_lambda_pkg/
+.aws-sam/
+evidence/
+scripts/
 
 # Ignore tests and local caches
 .pytest_cache/

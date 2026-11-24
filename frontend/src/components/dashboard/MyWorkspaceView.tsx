@@ -105,11 +105,11 @@ export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-card border border-border">
           <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-medium">My Total Triages</span>
+              <span className="text-xs font-medium">Recent Triages</span>
             <Layers className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="text-2xl font-mono font-bold text-white">{total}</div>
-          <p className="text-[11px] text-slate-500 mt-1">Saved in private partition</p>
+            <p className="text-[11px] text-slate-500 mt-1">Up to 100 recent assessments in your workspace</p>
         </div>
 
         <div className="p-4 rounded-xl bg-card border border-border">

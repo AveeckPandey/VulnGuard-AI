@@ -2,7 +2,7 @@
 VulnGuard AI - REST API Routes
 Implements endpoints for vulnerability triage, assessment lookup, and history retrieval.
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from backend.core.logging import logger
 from backend.core.exceptions import IntelligenceNotFoundError, ThreatIntelFetchError
@@ -37,13 +37,13 @@ async def analyze_vulnerability(
     user: Dict[str, Any] = Depends(get_current_user),
 ) -> AssessmentResponse:
     try:
-        owner = user.get("sub", "unassigned")
+        owner = user["sub"]
 
         # 1. Execute 3-Node LangGraph Pipeline scoped to authenticated user
         assessment = await execute_assessment(request, owner_user_id=owner)
 
         # 2. Persist to active repository backend (DynamoDB / SQLite) scoped to owner
-        repo.save(assessment, owner_user_id=owner)
+        repo.create_assessment(assessment, owner_user_id=owner)
 
         return assessment
     except IntelligenceNotFoundError as exc:
@@ -56,7 +56,7 @@ async def analyze_vulnerability(
         logger.error(f"[API] Error analyzing {request.cve_id}: {exc}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to complete vulnerability analysis: {str(exc)}"
+            detail="Failed to complete vulnerability analysis. Check server logs for details."
         )
 
 
@@ -72,7 +72,7 @@ async def list_assessments_paged(
     repo: AssessmentRepository = Depends(get_db_repo),
     user: Dict[str, Any] = Depends(get_current_user),
 ) -> PaginatedAssessmentsResponse:
-    owner = user.get("sub", "unassigned")
+    owner = user["sub"]
     items, next_cursor = repo.list_recent_assessments(owner_user_id=owner, limit=limit, last_evaluated_key=cursor)
     return PaginatedAssessmentsResponse(
         items=items,
@@ -94,7 +94,7 @@ async def list_assessments(
     repo: AssessmentRepository = Depends(get_db_repo),
     user: Dict[str, Any] = Depends(get_current_user),
 ) -> List[AssessmentSummary]:
-    owner = user.get("sub", "unassigned")
+    owner = user["sub"]
     items, _ = repo.list_recent_assessments(owner_user_id=owner, limit=limit, last_evaluated_key=cursor)
     return items
 
@@ -110,7 +110,7 @@ async def get_assessment(
     repo: AssessmentRepository = Depends(get_db_repo),
     user: Dict[str, Any] = Depends(get_current_user),
 ) -> AssessmentResponse:
-    owner = user.get("sub", "unassigned")
+    owner = user["sub"]
     assessment = repo.get_by_id(assessment_id, owner_user_id=owner)
     if not assessment:
         # Consistently return 404 so existence under another user is not leaked
@@ -130,7 +130,7 @@ async def get_user_workspace(
     repo: AssessmentRepository = Depends(get_db_repo),
     user: Dict[str, Any] = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    owner = user.get("sub", "unassigned")
+    owner = user["sub"]
     items, _ = repo.list_recent_assessments(owner_user_id=owner, limit=100)
 
     priorities = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}

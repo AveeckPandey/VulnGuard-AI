@@ -234,16 +234,16 @@ python -m pytest backend/tests -v
 The backend is packaged with **Mangum** for AWS Lambda serverless execution:
 
 ```powershell
-# Build and deploy using AWS SAM
-cd database/infrastructure
-sam build
-sam deploy --guided
+# Build Linux-compatible Lambda dependencies and source from the tracked repository
+.\scripts\prepare_lambda.ps1
+sam deploy --template-file database/infrastructure/template.yaml --stack-name vulnguard-ai-backend --region us-east-1 --resolve-s3 --capabilities CAPABILITY_IAM
 ```
 SAM provisions:
 - AWS Lambda function running `backend.app.main.handler` with Python 3.12 runtime.
 - API Gateway HTTP API v2 with CORS configured for `https://vulnguard.buildwithaveeck.com`.
-- Amazon DynamoDB table `VulnGuardAssessments` with On-Demand capacity and KMS encryption.
+- Uses the existing Amazon DynamoDB table `VulnGuardAssessments`. Provision `UserHistoryIndex` and `UserCveHistoryIndex` using `scripts/update_dynamodb_indexes.py` before switching traffic to user workspaces.
 - IAM Role granting least-privilege access to DynamoDB and `bedrock:InvokeModel` on Nova models.
+- Cognito user pool, public SPA client, and hosted sign-in domain. Copy the stack outputs into the frontend build variables `VITE_COGNITO_DOMAIN` and `VITE_COGNITO_CLIENT_ID`.
 
 ---
 

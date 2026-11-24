@@ -5,6 +5,7 @@ START -> intel_collection -> risk_prioritization -> ai_explanation -> END
 """
 import uuid
 import time
+from typing import Optional
 from datetime import datetime, timezone
 from langgraph.graph import StateGraph, START, END
 

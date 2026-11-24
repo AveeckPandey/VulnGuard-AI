@@ -7,16 +7,16 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          recharts: ['recharts'],
-          lucide: ['lucide-react'],
+        manualChunks(id) {
+          if (id.includes('node_modules/recharts')) return 'recharts';
+          if (id.includes('node_modules/lucide-react')) return 'lucide';
+          if (id.includes('node_modules/react')) return 'vendor';
         },
       },
     },
