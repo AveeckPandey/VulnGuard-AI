@@ -59,8 +59,6 @@ def ensure_user_indexes(table_name: str, region: str, dry_run: bool = False, wai
         {"AttributeName": "user_cve_id", "AttributeType": "S"},
         {"AttributeName": "sort_key", "AttributeType": "S"},
     ]
-    existing_attr_names = {a["AttributeName"] for a in desc["Table"].get("AttributeDefinitions", [])}
-
     target_gsis = get_gsi_definitions()
 
     for gsi in target_gsis:
@@ -76,27 +74,22 @@ def ensure_user_indexes(table_name: str, region: str, dry_run: bool = False, wai
             continue
 
         # AWS DynamoDB allows adding only ONE GSI per UpdateTable call on existing tables
-        # Find which attribute definitions are needed for this GSI
-        needed_attrs = [
+        # UpdateTable needs definitions for every key in the new GSI, including
+        # keys already defined by an existing index.
+        key_attrs = [
             attr for attr in required_attr_defs
             if attr["AttributeName"] in [k["AttributeName"] for k in gsi["KeySchema"]]
-            and attr["AttributeName"] not in existing_attr_names
         ]
 
         update_kwargs = {
             "TableName": table_name,
             "GlobalSecondaryIndexUpdates": [{"Create": gsi}],
         }
-        if needed_attrs:
-            update_kwargs["AttributeDefinitions"] = needed_attrs
+        update_kwargs["AttributeDefinitions"] = key_attrs
 
         try:
             client.update_table(**update_kwargs)
             print(f"[Success] Issued Create request for '{index_name}'. DynamoDB is backfilling index.")
-            # Update existing_attr_names cache
-            for na in needed_attrs:
-                existing_attr_names.add(na["AttributeName"])
-
             # Wait for this GSI to become ACTIVE before creating the next one (DynamoDB constraint)
             if wait:
                 print(f"[Wait] Waiting for '{index_name}' to reach 'ACTIVE' state before continuing...")
