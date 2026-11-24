@@ -66,9 +66,14 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
         self._table = self._dynamodb.Table(self.table_name)
         logger.info(f"[DynamoDB] Initialized repository for table '{self.table_name}' in region '{self.region_name}'")
 
-    def create_assessment(self, assessment: AssessmentResponse) -> AssessmentResponse:
-        """Stores a newly completed assessment in DynamoDB using conditional write."""
+    def create_assessment(
+        self, assessment: AssessmentResponse, owner_user_id: Optional[str] = None
+    ) -> AssessmentResponse:
+        """Stores a newly completed assessment in DynamoDB scoped to owner_user_id using conditional write."""
         try:
+            effective_owner = owner_user_id or assessment.owner_user_id or "LEGACY_UNASSIGNED"
+            assessment.owner_user_id = effective_owner
+
             cvss = assessment.intelligence.nvd.cvss_base_score
             epss_p = assessment.intelligence.epss.epss_probability
             epss_pct = assessment.intelligence.epss.epss_percentile
@@ -76,15 +81,20 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
             nvd_intel = assessment.intelligence.nvd
             now_iso = datetime.now(timezone.utc).isoformat()
             sort_key_val = f"{assessment.created_at}#{assessment.id}"
+            user_cve_key = f"{effective_owner}#{assessment.cve_id.strip().upper()}"
 
             item: Dict[str, Any] = {
                 # Primary Partition Key
                 "assessment_id": assessment.id,
                 # Backward-compatibility alias
                 "id": assessment.id,
-                # GSI 1 Partition Key & Sort Key
-                "entity_type": "ASSESSMENT",
+                # Multi-Tenant User Partitioning
+                "owner_user_id": effective_owner,
+                "user_cve_id": user_cve_key,
+                # Sort Key
                 "sort_key": sort_key_val,
+                # Legacy GSI 1 Partition Key (retained for backward compatibility only)
+                "entity_type": "ASSESSMENT",
                 # GSI 2 Partition Key
                 "cve_id": assessment.cve_id,
                 # Vulnerability & Threat Intelligence Fields
@@ -128,7 +138,7 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
                 Item=cleaned_item,
                 ConditionExpression="attribute_not_exists(assessment_id) AND attribute_not_exists(id)"
             )
-            logger.info(f"[DynamoDB] Successfully created assessment {assessment.id} for {assessment.cve_id}")
+            logger.info(f"[DynamoDB] Successfully created assessment {assessment.id} for {assessment.cve_id} (owner={effective_owner})")
             return assessment
 
         except ClientError as err:
@@ -142,8 +152,13 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
             logger.error(f"[DynamoDB] BotoCoreError for assessment {assessment.id}: {b_err}", exc_info=True)
             raise DatabaseError(f"DynamoDB connection failed: {str(b_err)}") from b_err
 
-    def get_assessment_by_id(self, assessment_id: str) -> Optional[AssessmentResponse]:
-        """Retrieves an assessment item by primary key (assessment_id)."""
+    def get_assessment_by_id(
+        self, assessment_id: str, owner_user_id: Optional[str] = None
+    ) -> Optional[AssessmentResponse]:
+        """
+        Retrieves an assessment item by primary key, strictly verifying ownership.
+        Returns None if record does not belong to owner_user_id, preventing cross-tenant leakage.
+        """
         try:
             # First try assessment_id partition key
             response = self._table.get_item(Key={"assessment_id": assessment_id}, ConsistentRead=True)
@@ -160,9 +175,20 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
             if not item:
                 return None
 
+            # Enforce strict ownership boundary
+            item_owner = item.get("owner_user_id")
+            if owner_user_id is not None:
+                if not item_owner or item_owner != owner_user_id:
+                    logger.warning(
+                        f"[Security] Cross-tenant access denied: User '{owner_user_id}' requested assessment '{assessment_id}' owned by '{item_owner}'"
+                    )
+                    return None
+
             full_json = item.get("full_data")
             if full_json:
                 data = json.loads(full_json)
+                if item_owner and not data.get("owner_user_id"):
+                    data["owner_user_id"] = item_owner
                 return AssessmentResponse.model_validate(data)
 
             return None
@@ -171,14 +197,17 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
             raise DatabaseError(f"DynamoDB get failed: {str(err)}") from err
 
     def list_recent_assessments(
-        self, limit: int = 20, last_evaluated_key: Optional[str] = None
-    ) -> List[AssessmentSummary]:
-        """Queries recent assessments using the HistoryIndex GSI (entity_type='ASSESSMENT')."""
+        self, owner_user_id: str, limit: int = 20, last_evaluated_key: Optional[str] = None
+    ) -> Tuple[List[AssessmentSummary], Optional[str]]:
+        """
+        Queries recent assessments for a specific user using UserHistoryIndex.
+        Fails visibly if index is missing; never falls back to a global table scan.
+        """
         try:
             query_kwargs: Dict[str, Any] = {
-                "IndexName": "HistoryIndex",
-                "KeyConditionExpression": "entity_type = :etype",
-                "ExpressionAttributeValues": {":etype": "ASSESSMENT"},
+                "IndexName": "UserHistoryIndex",
+                "KeyConditionExpression": "owner_user_id = :uid",
+                "ExpressionAttributeValues": {":uid": owner_user_id},
                 "ScanIndexForward": False,  # Chronological DESC
                 "Limit": limit,
             }
@@ -188,38 +217,30 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
                 except Exception:
                     pass
 
-            try:
-                response = self._table.query(**query_kwargs)
-                items = response.get("Items", [])
-            except ClientError as gsi_err:
-                logger.warning(f"[DynamoDB] HistoryIndex query failed ({gsi_err.response.get('Error', {}).get('Code')}), falling back to Scan.")
-                scan_kwargs: Dict[str, Any] = {"Limit": limit}
-                if last_evaluated_key:
-                    try:
-                        scan_kwargs["ExclusiveStartKey"] = json.loads(last_evaluated_key)
-                    except Exception:
-                        pass
-                response = self._table.scan(**scan_kwargs)
-                items = response.get("Items", [])
-                items.sort(key=lambda x: str(x.get("sort_key") or x.get("created_at", "")), reverse=True)
-                items = items[:limit]
-
-            return self._items_to_summaries(items)
+            response = self._table.query(**query_kwargs)
+            items = response.get("Items", [])
+            lek = response.get("LastEvaluatedKey")
+            next_cursor = json.dumps(decimal_to_float(lek)) if lek else None
+            return self._items_to_summaries(items), next_cursor
 
         except (ClientError, BotoCoreError) as err:
-            logger.error(f"[DynamoDB] Query recent assessments failed: {err}", exc_info=True)
-            raise DatabaseError(f"DynamoDB query failed: {str(err)}") from err
+            logger.error(f"[DynamoDB] Query UserHistoryIndex for user '{owner_user_id}' failed: {err}", exc_info=True)
+            raise DatabaseError(f"DynamoDB query failed on UserHistoryIndex: {str(err)}") from err
 
     def list_assessments_by_cve(
-        self, cve_id: str, limit: int = 20, last_evaluated_key: Optional[str] = None
+        self, cve_id: str, owner_user_id: str, limit: int = 20, last_evaluated_key: Optional[str] = None
     ) -> List[AssessmentSummary]:
-        """Queries assessments for a specific CVE using the CveHistoryIndex GSI."""
+        """
+        Queries assessments for a specific CVE for a specific user using UserCveHistoryIndex.
+        Fails visibly if index is missing; never falls back to a global table scan.
+        """
         clean_cve = cve_id.strip().upper()
+        user_cve_key = f"{owner_user_id}#{clean_cve}"
         try:
             query_kwargs: Dict[str, Any] = {
-                "IndexName": "CveHistoryIndex",
-                "KeyConditionExpression": "cve_id = :cid",
-                "ExpressionAttributeValues": {":cid": clean_cve},
+                "IndexName": "UserCveHistoryIndex",
+                "KeyConditionExpression": "user_cve_id = :ucid",
+                "ExpressionAttributeValues": {":ucid": user_cve_key},
                 "ScanIndexForward": False,  # Chronological DESC
                 "Limit": limit,
             }
@@ -229,26 +250,13 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
                 except Exception:
                     pass
 
-            try:
-                response = self._table.query(**query_kwargs)
-                items = response.get("Items", [])
-            except ClientError as gsi_err:
-                logger.warning(f"[DynamoDB] CveHistoryIndex query failed ({gsi_err.response.get('Error', {}).get('Code')}), using Scan fallback.")
-                scan_kwargs: Dict[str, Any] = {
-                    "FilterExpression": "cve_id = :cid",
-                    "ExpressionAttributeValues": {":cid": clean_cve},
-                    "Limit": limit,
-                }
-                response = self._table.scan(**scan_kwargs)
-                items = response.get("Items", [])
-                items.sort(key=lambda x: str(x.get("sort_key") or x.get("created_at", "")), reverse=True)
-                items = items[:limit]
-
+            response = self._table.query(**query_kwargs)
+            items = response.get("Items", [])
             return self._items_to_summaries(items)
 
         except (ClientError, BotoCoreError) as err:
-            logger.error(f"[DynamoDB] Query assessments for {clean_cve} failed: {err}", exc_info=True)
-            raise DatabaseError(f"DynamoDB query by CVE failed: {str(err)}") from err
+            logger.error(f"[DynamoDB] Query UserCveHistoryIndex for '{clean_cve}' user '{owner_user_id}' failed: {err}", exc_info=True)
+            raise DatabaseError(f"DynamoDB query failed on UserCveHistoryIndex: {str(err)}") from err
 
     def _items_to_summaries(self, items: List[Dict[str, Any]]) -> List[AssessmentSummary]:
         summaries: List[AssessmentSummary] = []
@@ -265,6 +273,7 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
             summaries.append(AssessmentSummary(
                 id=aid,
                 cve_id=item["cve_id"],
+                owner_user_id=item.get("owner_user_id"),
                 priority_level=PriorityLevel(p_level),
                 total_score=score_val,
                 cvss_base_score=float(cvss_raw) if cvss_raw is not None else None,

@@ -35,13 +35,16 @@ def build_assessment_graph():
 vulnguard_graph = build_assessment_graph()
 
 
-async def execute_assessment(request: AssessmentRequest) -> AssessmentResponse:
+async def execute_assessment(
+    request: AssessmentRequest,
+    owner_user_id: Optional[str] = None
+) -> AssessmentResponse:
     """Executes the full LangGraph pipeline and returns the validated AssessmentResponse."""
     start_time = time.monotonic()
     assessment_id = f"vg-{uuid.uuid4().hex[:12]}"
     created_at = datetime.now(timezone.utc).isoformat()
 
-    logger.info(f"[Workflow] Starting assessment {assessment_id} for {request.cve_id}")
+    logger.info(f"[Workflow] Starting assessment {assessment_id} for {request.cve_id} (owner={owner_user_id or 'unassigned'})")
 
     initial_state: VulnGuardState = {
         "cve_id": request.cve_id,
@@ -60,6 +63,7 @@ async def execute_assessment(request: AssessmentRequest) -> AssessmentResponse:
     response = AssessmentResponse(
         id=assessment_id,
         cve_id=request.cve_id,
+        owner_user_id=owner_user_id,
         asset_criticality=request.asset_criticality,
         internet_exposure=request.internet_exposure,
         system_context=request.system_context,

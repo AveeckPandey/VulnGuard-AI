@@ -1,6 +1,19 @@
-import React from 'react';
-import { Shield, Activity, Wifi, RefreshCw, Menu, X, Cpu } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Shield,
+  Activity,
+  Wifi,
+  RefreshCw,
+  Menu,
+  X,
+  Cpu,
+  LogOut,
+  ChevronDown,
+  UserCheck,
+  Lock,
+} from 'lucide-react';
 import { TabType } from './Sidebar';
+import { UserProfile } from '../../types/auth';
 
 interface HeaderProps {
   activeTab: TabType;
@@ -12,6 +25,9 @@ interface HeaderProps {
   isRefreshing?: boolean;
   mobileMenuOpen?: boolean;
   setMobileMenuOpen?: (open: boolean) => void;
+  user: UserProfile | null;
+  onOpenAuthModal: () => void;
+  onSignOut: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,7 +40,12 @@ export const Header: React.FC<HeaderProps> = ({
   isRefreshing = false,
   mobileMenuOpen = false,
   setMobileMenuOpen,
+  user,
+  onOpenAuthModal,
+  onSignOut,
 }) => {
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+
   const isHealthy = systemHealth === 'healthy';
   const isConnecting = systemHealth === null || systemHealth === undefined;
   const kevCount = intelFeeds?.feeds?.cisa_kev?.known_exploited_cves_count || 1790;
@@ -42,6 +63,10 @@ export const Header: React.FC<HeaderProps> = ({
     overview: {
       title: 'Security Operations Overview',
       subtitle: 'Global vulnerability posture & threat telemetry',
+    },
+    workspace: {
+      title: 'Personal Assessment Workspace',
+      subtitle: 'Tenant-isolated triage telemetry & personal analytics',
     },
     analyzer: {
       title: 'CVE Intelligence & Prioritization',
@@ -110,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Live Intel Feeds & Status */}
+        {/* Right: Live Intel Feeds, Mode, Account & Status */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           {/* Feed Pills */}
           <div className="hidden lg:flex items-center space-x-1.5 text-xs">
@@ -190,6 +215,70 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">
               {isConnecting ? 'Connecting...' : isHealthy ? 'API Online' : 'Offline'}
             </span>
+          </div>
+
+          {/* Account Menu / Profile Button */}
+          <div className="relative">
+            {user ? (
+              <div>
+                <button
+                  onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                  className="flex items-center space-x-2 px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 hover:border-cyan-500/50 text-slate-200 transition-all text-xs"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white font-bold text-[11px]">
+                    {user.username.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline font-semibold max-w-[110px] truncate">
+                    {user.name || user.username}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+
+                {accountMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#0f172a] border border-slate-800 shadow-2xl py-2 z-50 text-xs animate-in fade-in duration-150">
+                    <div className="px-4 py-2 border-b border-slate-800">
+                      <div className="font-bold text-white truncate">{user.name || user.username}</div>
+                      <div className="text-[11px] text-slate-400 truncate">{user.email || 'No email registered'}</div>
+                      <div className="text-[10px] font-mono text-cyan-400 mt-1 truncate">
+                        ID: {user.sub}
+                      </div>
+                    </div>
+
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          onOpenAuthModal();
+                        }}
+                        className="w-full text-left px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center space-x-2 transition-all"
+                      >
+                        <UserCheck className="w-4 h-4 text-cyan-400" />
+                        <span>Switch Persona / Auth</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          onSignOut();
+                        }}
+                        className="w-full text-left px-4 py-2 text-red-400 hover:bg-red-500/10 flex items-center space-x-2 transition-all"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={onOpenAuthModal}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-xs shadow-md shadow-sky-500/20 transition-all"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

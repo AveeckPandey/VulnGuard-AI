@@ -1,30 +1,25 @@
-import { AssessmentRequest, AssessmentResponse, AssessmentSummary } from '../types/assessment';
+import {
+  AssessmentRequest,
+  AssessmentResponse,
+  AssessmentSummary,
+  PaginatedAssessmentsResponse,
+  UserWorkspaceSummary,
+} from '../types/assessment';
+import { authManager } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-// User-specific authentication token management (in-memory with optional sessionStorage backing).
-// Security Notice: Server-side API keys MUST NOT be embedded in Vite bundles via VITE_ variables.
-let inMemoryUserToken: string | null = null;
-
+// Token management backed by authManager session
 export function setUserAuthToken(token: string | null): void {
-  inMemoryUserToken = token;
-  if (typeof window !== 'undefined' && window.sessionStorage) {
-    if (token) {
-      window.sessionStorage.setItem('vulnguard_user_token', token);
-    } else {
-      window.sessionStorage.removeItem('vulnguard_user_token');
-    }
+  if (token) {
+    authManager.loginWithTokens(token);
+  } else {
+    authManager.clearSession();
   }
 }
 
 export function getUserAuthToken(): string | null {
-  if (inMemoryUserToken) {
-    return inMemoryUserToken;
-  }
-  if (typeof window !== 'undefined' && window.sessionStorage) {
-    return window.sessionStorage.getItem('vulnguard_user_token');
-  }
-  return null;
+  return authManager.getAccessToken();
 }
 
 export function getResolvedApiEndpointDisplay(): string {
@@ -51,10 +46,10 @@ export class ApiError extends Error {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  const token = getUserAuthToken();
+  const token = authManager.getAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}`, 'X-API-Key': token } : {}),
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...((options.headers as Record<string, string>) || {}),
   };
 
@@ -85,6 +80,14 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const apiClient = {
+  setUserAuthToken(token: string | null): void {
+    setUserAuthToken(token);
+  },
+
+  getUserAuthToken(): string | null {
+    return getUserAuthToken();
+  },
+
   async analyzeVulnerability(req: AssessmentRequest): Promise<AssessmentResponse> {
     return request<AssessmentResponse>('/api/analyze', {
       method: 'POST',
@@ -96,8 +99,18 @@ export const apiClient = {
     return request<AssessmentResponse>(`/api/assessments/${id}`);
   },
 
-  async listAssessments(limit: number = 20): Promise<AssessmentSummary[]> {
-    return request<AssessmentSummary[]>(`/api/assessments?limit=${limit}`);
+  async listAssessments(limit: number = 20, cursor?: string): Promise<AssessmentSummary[]> {
+    const query = cursor ? `limit=${limit}&cursor=${encodeURIComponent(cursor)}` : `limit=${limit}`;
+    return request<AssessmentSummary[]>(`/api/assessments?${query}`);
+  },
+
+  async listAssessmentsPaged(limit: number = 20, cursor?: string | null): Promise<PaginatedAssessmentsResponse> {
+    const query = cursor ? `limit=${limit}&cursor=${encodeURIComponent(cursor)}` : `limit=${limit}`;
+    return request<PaginatedAssessmentsResponse>(`/api/assessments/paged?${query}`);
+  },
+
+  async getUserWorkspace(): Promise<UserWorkspaceSummary> {
+    return request<UserWorkspaceSummary>('/api/user/workspace');
   },
 
   async getThreatIntelStatus(): Promise<any> {

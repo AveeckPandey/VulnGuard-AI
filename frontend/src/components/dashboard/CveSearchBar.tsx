@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Loader2, Globe, Server, AlertCircle, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Loader2, Globe, Server, AlertCircle, Sparkles, CheckCircle2, Shield, Database, Cpu, Activity } from 'lucide-react';
 import { AssetCriticality, InternetExposure, AssessmentRequest } from '../../types/assessment';
 
 interface CveSearchBarProps {
@@ -18,6 +18,13 @@ interface CveSearchBarProps {
 
 const CVE_REGEX = /^CVE-\d{4}-\d{4,}$/i;
 
+const EXECUTION_PHASES = [
+  { id: 1, label: 'Threat Intel Ingestion', detail: 'Querying NVD 2.0, EPSS v3, CISA KEV', icon: Shield },
+  { id: 2, label: 'Deterministic Scoring', detail: 'Computing 0–100 risk heuristic matrix', icon: Activity },
+  { id: 3, label: 'AI Remediation Engine', detail: 'NVIDIA Nemotron synthesis with guardrails', icon: Cpu },
+  { id: 4, label: 'Workspace Persistence', detail: 'Storing in DynamoDB UserHistoryIndex', icon: Database },
+];
+
 export const CveSearchBar: React.FC<CveSearchBarProps> = ({
   onAnalyze,
   isLoading,
@@ -32,6 +39,21 @@ export const CveSearchBar: React.FC<CveSearchBarProps> = ({
   setSystemContext,
 }) => {
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [activePhaseIndex, setActivePhaseIndex] = useState<number>(0);
+
+  // Animate the pipeline execution phase when loading
+  useEffect(() => {
+    if (!isLoading) {
+      setActivePhaseIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setActivePhaseIndex((prev) => (prev < EXECUTION_PHASES.length - 1 ? prev + 1 : prev));
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +80,7 @@ export const CveSearchBar: React.FC<CveSearchBarProps> = ({
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-card border border-border shadow-lg">
+    <div className="p-5 rounded-2xl bg-card border border-border shadow-lg space-y-4">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Top Row: Search Input & Action Button */}
         <div>
@@ -77,7 +99,7 @@ export const CveSearchBar: React.FC<CveSearchBarProps> = ({
                   setSelectedCve(e.target.value.toUpperCase());
                   if (validationError) setValidationError(null);
                 }}
-                placeholder="e.g. CVE-2021-44228, CVE-2023-38606..."
+                placeholder="e.g. CVE-2021-44228, CVE-2024-3094..."
                 className={`w-full pl-11 pr-4 py-3 bg-[#0b1120] rounded-xl border text-slate-100 font-mono text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all ${
                   validationError ? 'border-red-500/60 ring-1 ring-red-500/50' : 'border-slate-700/80'
                 }`}
@@ -93,7 +115,7 @@ export const CveSearchBar: React.FC<CveSearchBarProps> = ({
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>Executing LangGraph & Nemotron AI...</span>
+                  <span>Executing LangGraph Pipeline...</span>
                 </>
               ) : (
                 <>
@@ -112,7 +134,7 @@ export const CveSearchBar: React.FC<CveSearchBarProps> = ({
           )}
         </div>
 
-        {/* Bottom Row: Environmental Context Controls */}
+        {/* Environmental Context Controls */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-800/80">
           {/* Asset Criticality */}
           <div>
@@ -191,6 +213,55 @@ export const CveSearchBar: React.FC<CveSearchBarProps> = ({
           </div>
         </div>
       </form>
+
+      {/* 4-Phase LangGraph Pipeline Execution Stepper when Loading */}
+      {isLoading && (
+        <div className="p-4 rounded-xl bg-slate-900/90 border border-cyan-500/30 space-y-3 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-cyan-300 flex items-center space-x-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+              <span>LangGraph Execution in Progress: Phase {activePhaseIndex + 1} of 4</span>
+            </span>
+            <span className="text-[11px] font-mono text-slate-400">
+              {EXECUTION_PHASES[activePhaseIndex].label}
+            </span>
+          </div>
+
+          {/* Stepper Dots & Bars */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {EXECUTION_PHASES.map((phase, idx) => {
+              const Icon = phase.icon;
+              const isPast = idx < activePhaseIndex;
+              const isCurrent = idx === activePhaseIndex;
+
+              return (
+                <div
+                  key={phase.id}
+                  className={`p-2.5 rounded-lg border text-xs transition-all ${
+                    isCurrent
+                      ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-200 shadow-sm shadow-cyan-500/10'
+                      : isPast
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                      : 'bg-slate-800/40 border-slate-800 text-slate-500'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2 mb-1">
+                    {isPast ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    ) : isCurrent ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400 shrink-0" />
+                    ) : (
+                      <Icon className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    )}
+                    <span className="font-bold text-[11px] truncate">{phase.label}</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 line-clamp-1">{phase.detail}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

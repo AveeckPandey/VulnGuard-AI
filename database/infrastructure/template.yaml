@@ -28,6 +28,9 @@ Globals:
         SSM_NVIDIA_API_KEY_PARAM: /vulnguard/nvidia_api_key
         SSM_NVD_API_KEY_PARAM: /vulnguard/nvd_api_key
         SSM_API_KEY_PARAM: /vulnguard/api_key
+        SSM_M2M_API_KEY_PARAM: /vulnguard/m2m_api_key
+        COGNITO_USER_POOL_ID: !Ref VulnGuardUserPool
+        COGNITO_APP_CLIENT_ID: !Ref VulnGuardUserPoolClient
         CORS_ORIGINS: '["https://vulnguard-ai.buildwithaveeck.com","https://vulnguard.buildwithaveeck.com","http://localhost:5173","http://127.0.0.1:5173"]'
 
 Resources:
@@ -48,6 +51,7 @@ Resources:
           - "Authorization"
           - "X-Requested-With"
           - "X-API-Key"
+          - "X-Service-Key"
         AllowMethods:
           - GET
           - POST
@@ -58,11 +62,80 @@ Resources:
         ThrottlingRateLimit: 10
       Auth:
         Authorizers:
+          CognitoJwtAuthorizer:
+            JwtConfiguration:
+              Issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${VulnGuardUserPool}"
+              Audience:
+                - !Ref VulnGuardUserPoolClient
+            IdentitySource: "$request.header.Authorization"
           ApiKeyAuthorizer:
             FunctionArn: !GetAtt VulnGuardAuthorizerFunction.Arn
             FunctionPayloadType: REQUEST
             EnableSimpleResponses: true
             AuthorizerPayloadFormatVersion: "2.0"
+
+  # ==========================================
+  # Amazon Cognito User Directory & Public SPA Client
+  # ==========================================
+  VulnGuardUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: VulnGuardUserPool
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+
+  VulnGuardUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: VulnGuardWebClient
+      UserPoolId: !Ref VulnGuardUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - openid
+        - email
+        - profile
+      CallbackURLs:
+        - "https://vulnguard.buildwithaveeck.com/callback"
+        - "https://vulnguard-ai.buildwithaveeck.com/callback"
+        - "http://localhost:5173/callback"
+      LogoutURLs:
+        - "https://vulnguard.buildwithaveeck.com"
+        - "https://vulnguard-ai.buildwithaveeck.com"
+        - "http://localhost:5173"
+      SupportedIdentityProviders:
+        - COGNITO
+
+  # ==========================================
+  # API Gateway Lambda Authorizer Permission
+  # ==========================================
+  VulnGuardAuthorizerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt VulnGuardAuthorizerFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${VulnGuardHttpApi}/*"
 
   # ==========================================
   # API Gateway Lambda Request Authorizer Function
@@ -126,7 +199,7 @@ Resources:
             Path: /api/analyze
             Method: POST
             Auth:
-              Authorizer: ApiKeyAuthorizer
+              Authorizer: CognitoJwtAuthorizer
             RouteSettings:
               ThrottlingBurstLimit: 10
               ThrottlingRateLimit: 5
@@ -137,7 +210,7 @@ Resources:
             Path: /api/assessments
             Method: GET
             Auth:
-              Authorizer: ApiKeyAuthorizer
+              Authorizer: CognitoJwtAuthorizer
         ApiAssessmentDetail:
           Type: HttpApi
           Properties:
@@ -145,7 +218,15 @@ Resources:
             Path: /api/assessments/{assessment_id}
             Method: GET
             Auth:
-              Authorizer: ApiKeyAuthorizer
+              Authorizer: CognitoJwtAuthorizer
+        ApiWorkspace:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VulnGuardHttpApi
+            Path: /api/user/workspace
+            Method: GET
+            Auth:
+              Authorizer: CognitoJwtAuthorizer
         ApiRoot:
           Type: HttpApi
           Properties:
@@ -169,3 +250,9 @@ Outputs:
   DynamoDBTableArn:
     Description: "ARN of the DynamoDB table"
     Value: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingDynamoDbTableName}"
+  CognitoUserPoolId:
+    Description: "Amazon Cognito User Pool ID"
+    Value: !Ref VulnGuardUserPool
+  CognitoAppClientId:
+    Description: "Amazon Cognito Public App Client ID for SPA"
+    Value: !Ref VulnGuardUserPoolClient

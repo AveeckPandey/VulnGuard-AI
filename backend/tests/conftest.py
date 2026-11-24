@@ -38,12 +38,26 @@ def clean_state():
     test_db = Path(os.environ["SQLITE_DB_PATH"])
     if test_db.exists():
         try:
+            import sqlite3
+            with sqlite3.connect(str(test_db)) as conn:
+                conn.execute("DELETE FROM assessments")
+                conn.commit()
+        except Exception:
+            pass
+        try:
             test_db.unlink()
         except Exception:
             pass
     yield
     reset_repository()
     if test_db.exists():
+        try:
+            import sqlite3
+            with sqlite3.connect(str(test_db)) as conn:
+                conn.execute("DELETE FROM assessments")
+                conn.commit()
+        except Exception:
+            pass
         try:
             test_db.unlink()
         except Exception:

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/layout/Header';
 import { Sidebar, TabType } from './components/layout/Sidebar';
 import { OverviewView } from './components/dashboard/OverviewView';
+import { MyWorkspaceView } from './components/dashboard/MyWorkspaceView';
 import { AnalyticsDashboard } from './components/dashboard/AnalyticsDashboard';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { CveSearchBar } from './components/dashboard/CveSearchBar';
@@ -10,22 +11,32 @@ import { ThreatIntelCards } from './components/dashboard/ThreatIntelCards';
 import { FactorBreakdownChart } from './components/dashboard/FactorBreakdownChart';
 import { AiRemediationPanel } from './components/dashboard/AiRemediationPanel';
 import { EvidenceCitations } from './components/dashboard/EvidenceCitations';
+import { LandingHero } from './components/dashboard/LandingHero';
 import { AssessmentHistoryTable } from './components/history/AssessmentHistoryTable';
 import { AssessmentDetailModal } from './components/details/AssessmentDetailModal';
+import { AuthModal } from './components/auth/AuthModal';
 import { apiClient, ApiError, getResolvedApiEndpointDisplay } from './api/client';
+import { authService, authManager } from './api/auth';
 import {
   AssessmentResponse,
   AssessmentSummary,
   AssetCriticality,
   InternetExposure,
   AssessmentRequest,
+  UserWorkspaceSummary,
 } from './types/assessment';
+import { AuthState, UserProfile } from './types/auth';
 import { AlertCircle, Shield, WifiOff } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isLiveMode, setIsLiveMode] = useState<boolean>(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+
+  // Authentication & Workspace States
+  const [authState, setAuthState] = useState<AuthState>(() => authService.getInitialState());
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [userWorkspace, setUserWorkspace] = useState<UserWorkspaceSummary | null>(null);
 
   // Form parameters
   const [selectedCve, setSelectedCve] = useState<string>('CVE-2021-44228');
@@ -45,13 +56,16 @@ export function App() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Initial Data Fetch
+  // Synchronize client token with authState
   useEffect(() => {
-    fetchSystemStatus();
-    loadHistory();
-  }, []);
+    if (authState.session?.accessToken) {
+      apiClient.setUserAuthToken(authState.session.accessToken);
+    } else {
+      apiClient.setUserAuthToken(null);
+    }
+  }, [authState]);
 
-  const fetchSystemStatus = async () => {
+  const fetchSystemStatus = useCallback(async () => {
     try {
       const health = await apiClient.getHealth();
       setSystemHealth(health);
@@ -60,9 +74,9 @@ export function App() {
     } catch {
       setSystemHealth({ status: 'unreachable' });
     }
-  };
+  }, []);
 
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setIsRefreshing(true);
     try {
       const data = await apiClient.listAssessments(50);
@@ -76,7 +90,27 @@ export function App() {
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, []);
+
+  const loadWorkspace = useCallback(async () => {
+    if (!authState.isAuthenticated) {
+      setUserWorkspace(null);
+      return;
+    }
+    try {
+      const summary = await apiClient.getUserWorkspace();
+      setUserWorkspace(summary);
+    } catch (err) {
+      console.warn('Could not load user workspace summary:', err);
+    }
+  }, [authState.isAuthenticated]);
+
+  // Initial Data Fetch & Reload on Auth State Change
+  useEffect(() => {
+    fetchSystemStatus();
+    loadHistory();
+    loadWorkspace();
+  }, [fetchSystemStatus, loadHistory, loadWorkspace]);
 
   const handleAnalyze = async (request: AssessmentRequest) => {
     setIsLoading(true);
@@ -85,14 +119,16 @@ export function App() {
     try {
       const result = await apiClient.analyzeVulnerability(request);
       setCurrentAssessment(result);
-      // Refresh history list from DynamoDB
+      // Refresh history & workspace summary from DynamoDB
       loadHistory();
+      loadWorkspace();
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 401) {
           setErrorMessage(
-            'Authentication Required (HTTP 401): An authorized API Access Key is required to execute live vulnerability analysis. Open Settings to configure your API key.'
+            'Authentication Required (HTTP 401): Please sign in with Cognito or select a demo persona to run user-isolated assessments.'
           );
+          setAuthModalOpen(true);
         } else {
           setErrorMessage(error.message);
         }
@@ -130,25 +166,44 @@ export function App() {
     try {
       const result = await apiClient.getAssessment(id);
       setDetailedAssessment(result);
-    } catch {
-      setErrorMessage(`Failed to retrieve assessment ${id} from database.`);
+    } catch (err: any) {
+      if (err instanceof ApiError && err.status === 404) {
+        setErrorMessage(`Assessment ${id} not found in your private workspace partition.`);
+      } else {
+        setErrorMessage(`Failed to retrieve assessment ${id} from database.`);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLoadIntoAnalyzer = (assessment: AssessmentResponse) => {
-    setCurrentAssessment(assessment);
+  const handleLoadIntoAnalyzer = (assessment: AssessmentResponse | AssessmentSummary) => {
+    if ('intelligence' in assessment) {
+      setCurrentAssessment(assessment as AssessmentResponse);
+    }
     setSelectedCve(assessment.cve_id);
     setCriticality(assessment.asset_criticality);
     setExposure(assessment.internet_exposure);
-    setSystemContext(assessment.system_context || '');
     setDetailedAssessment(null);
     setActiveTab('analyzer');
   };
 
   const handleRefreshAll = async () => {
-    await Promise.all([fetchSystemStatus(), loadHistory()]);
+    await Promise.all([fetchSystemStatus(), loadHistory(), loadWorkspace()]);
+  };
+
+  const handleSignOut = () => {
+    authService.clearSession();
+    setAuthState({
+      isAuthenticated: false,
+      isLoading: false,
+      user: null,
+      session: null,
+      error: null,
+    });
+    setHistory([]);
+    setUserWorkspace(null);
+    setCurrentAssessment(null);
   };
 
   return (
@@ -164,6 +219,9 @@ export function App() {
         isRefreshing={isRefreshing}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
+        user={authState.user}
+        onOpenAuthModal={() => setAuthModalOpen(true)}
+        onSignOut={handleSignOut}
       />
 
       {/* Backend Connectivity Warning Banner if Unreachable */}
@@ -208,6 +266,8 @@ export function App() {
             }}
             onSelectPresetCve={handleSelectPresetCve}
             historyCount={history.length}
+            user={authState.user}
+            onOpenAuthModal={() => setAuthModalOpen(true)}
           />
         </div>
 
@@ -221,17 +281,12 @@ export function App() {
                 <span>{errorMessage}</span>
               </div>
               <div className="flex items-center space-x-3 shrink-0 ml-auto">
-                {activeTab !== 'settings' && (
-                  <button
-                    onClick={() => {
-                      setActiveTab('settings');
-                      setErrorMessage(null);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-white font-medium text-xs transition-all"
-                  >
-                    Open Settings & Auth
-                  </button>
-                )}
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-white font-medium text-xs transition-all"
+                >
+                  Manage Auth
+                </button>
                 <button
                   onClick={() => setErrorMessage(null)}
                   className="text-red-400 hover:text-white text-xs underline"
@@ -244,14 +299,36 @@ export function App() {
 
           {/* TAB 1: OVERVIEW DASHBOARD */}
           {activeTab === 'overview' && (
-            <OverviewView
-              history={history}
-              onSelectAssessment={handleSelectAssessment}
+            <div className="space-y-6">
+              <LandingHero
+                onNavigateToAnalyzer={() => setActiveTab('analyzer')}
+                onSelectPreset={handleSelectPresetCve}
+                onOpenAuthModal={() => setAuthModalOpen(true)}
+                isAuthenticated={authState.isAuthenticated}
+              />
+
+              <OverviewView
+                history={history}
+                onSelectAssessment={handleSelectAssessment}
+                onNavigateToAnalyzer={() => setActiveTab('analyzer')}
+              />
+            </div>
+          )}
+
+          {/* TAB 2: MY WORKSPACE (PERSONAL TRIAGE TELEMETRY) */}
+          {activeTab === 'workspace' && (
+            <MyWorkspaceView
+              user={authState.user}
+              workspace={userWorkspace}
+              intelFeeds={intelFeeds}
               onNavigateToAnalyzer={() => setActiveTab('analyzer')}
+              onSelectAssessment={handleSelectAssessment}
+              onSelectPreset={handleSelectPresetCve}
+              onOpenAuthModal={() => setAuthModalOpen(true)}
             />
           )}
 
-          {/* TAB 2: CVE ANALYZER (PRIMARY FEATURE) */}
+          {/* TAB 3: CVE ANALYZER (PRIMARY FEATURE) */}
           {activeTab === 'analyzer' && (
             <div className="space-y-6">
               {/* CVE Search & Environmental Context Form */}
@@ -307,22 +384,23 @@ export function App() {
             </div>
           )}
 
-          {/* TAB 3: ASSESSMENT HISTORY */}
+          {/* TAB 4: ASSESSMENT HISTORY */}
           {activeTab === 'history' && (
             <AssessmentHistoryTable
               history={history}
               onSelectAssessment={handleSelectAssessment}
               onRefresh={loadHistory}
               isLoading={isRefreshing}
+              onLoadIntoAnalyzer={handleLoadIntoAnalyzer}
             />
           )}
 
-          {/* TAB 4: DEEP ANALYTICS */}
+          {/* TAB 5: DEEP ANALYTICS */}
           {activeTab === 'analytics' && (
             <AnalyticsDashboard history={history} />
           )}
 
-          {/* TAB 5: SYSTEM & CLOUD SETTINGS */}
+          {/* TAB 6: SYSTEM & CLOUD SETTINGS */}
           {activeTab === 'settings' && (
             <SettingsPanel
               systemHealth={systemHealth}
@@ -340,6 +418,25 @@ export function App() {
           assessment={detailedAssessment}
           onClose={() => setDetailedAssessment(null)}
           onLoadIntoAnalyzer={handleLoadIntoAnalyzer}
+        />
+      )}
+
+      {/* Authentication Modal */}
+      {authModalOpen && (
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          onAuthSuccess={(user: UserProfile) => {
+            const session = authManager.getSession();
+            setAuthState({
+              isAuthenticated: true,
+              isLoading: false,
+              user,
+              session,
+              error: null,
+            });
+            setAuthModalOpen(false);
+          }}
         />
       )}
     </div>

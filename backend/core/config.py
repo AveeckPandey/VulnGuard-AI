@@ -50,10 +50,26 @@ class Settings(BaseSettings):
     API_KEY: str = ""
     SSM_API_KEY_PARAM: str = "/vulnguard/api_key"
 
+    # Amazon Cognito User Pools (Multi-tenant User Identity)
+    COGNITO_USER_POOL_ID: str = ""
+    COGNITO_APP_CLIENT_ID: str = ""
+    COGNITO_DOMAIN: str = ""
+
+    # Machine-to-Machine (M2M) Service Account Authentication
+    M2M_API_KEY: str = ""
+    SSM_M2M_API_KEY_PARAM: str = "/vulnguard/m2m_api_key"
+
     @property
     def is_auth_required(self) -> bool:
         """Authentication is required in production or when explicitly configured via REQUIRE_AUTH."""
         return self.REQUIRE_AUTH or self.ENVIRONMENT == "production"
+
+    @property
+    def cognito_issuer(self) -> str:
+        """Returns standard Cognito OIDC issuer URL."""
+        if self.COGNITO_USER_POOL_ID:
+            return f"https://cognito-idp.{self.AWS_REGION}.amazonaws.com/{self.COGNITO_USER_POOL_ID}"
+        return ""
 
     def get_api_key(self) -> str:
         """Returns API key from environment variable or AWS SSM Parameter Store (cached)."""
@@ -70,6 +86,18 @@ class Settings(BaseSettings):
             response = ssm.get_parameter(Name=self.SSM_API_KEY_PARAM, WithDecryption=True)
             _CACHED_SSM_API_KEY = response["Parameter"]["Value"].strip()
             return _CACHED_SSM_API_KEY
+        except Exception:
+            return ""
+
+    def get_m2m_api_key(self) -> str:
+        """Returns M2M service key from environment or AWS SSM Parameter Store."""
+        if self.M2M_API_KEY.strip():
+            return self.M2M_API_KEY.strip()
+        try:
+            import boto3
+            ssm = boto3.client("ssm", region_name=self.AWS_REGION)
+            response = ssm.get_parameter(Name=self.SSM_M2M_API_KEY_PARAM, WithDecryption=True)
+            return response["Parameter"]["Value"].strip()
         except Exception:
             return ""
 

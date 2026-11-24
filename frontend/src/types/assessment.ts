@@ -88,6 +88,7 @@ export interface AiRemediation {
 export interface AssessmentResponse {
   id: string;
   cve_id: string;
+  owner_user_id?: string | null;
   asset_criticality: AssetCriticality;
   internet_exposure: InternetExposure;
   system_context: string | null;
@@ -102,6 +103,7 @@ export interface AssessmentResponse {
 export interface AssessmentSummary {
   id: string;
   cve_id: string;
+  owner_user_id?: string | null;
   priority_level: PriorityLevel;
   total_score: number;
   cvss_base_score: number | null;
@@ -110,6 +112,27 @@ export interface AssessmentSummary {
   asset_criticality: AssetCriticality;
   internet_exposure: InternetExposure;
   created_at: string;
+}
+
+export interface PaginatedAssessmentsResponse {
+  items: AssessmentSummary[];
+  count: number;
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
+export interface UserWorkspaceSummary {
+  user_id: string;
+  email?: string | null;
+  client_type?: string;
+  total_assessments: number;
+  recent_assessments: AssessmentSummary[];
+  priority_distribution: {
+    CRITICAL: number;
+    HIGH: number;
+    MEDIUM: number;
+    LOW: number;
+  };
 }
 
 export interface AssessmentRequest {

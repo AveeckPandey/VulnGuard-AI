@@ -41,6 +41,7 @@ class AiRemediation(BaseModel):
 class AssessmentResponse(BaseModel):
     id: str = Field(..., description="Unique assessment UUID")
     cve_id: str
+    owner_user_id: Optional[str] = Field(None, description="Cognito user sub of the assessment owner")
     asset_criticality: AssetCriticality
     internet_exposure: InternetExposure
     system_context: Optional[str] = None
@@ -58,6 +59,7 @@ class AssessmentResponse(BaseModel):
 class AssessmentSummary(BaseModel):
     id: str
     cve_id: str
+    owner_user_id: Optional[str] = None
     priority_level: str
     total_score: float
     cvss_base_score: Optional[float]
@@ -66,3 +68,10 @@ class AssessmentSummary(BaseModel):
     asset_criticality: AssetCriticality
     internet_exposure: InternetExposure
     created_at: str
+
+
+class PaginatedAssessmentsResponse(BaseModel):
+    items: List[AssessmentSummary]
+    count: int = Field(..., description="Number of items returned in the current page")
+    next_cursor: Optional[str] = Field(None, description="Base64 encoded pagination key for retrieving subsequent results")
+    has_more: bool = Field(False, description="Whether additional records exist beyond the current page")
