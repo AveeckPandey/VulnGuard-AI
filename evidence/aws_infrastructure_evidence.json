@@ -1,0 +1,83 @@
+{
+  "caller_identity": {
+    "UserId": "AIDAY3JR7PC2EJLJLVKF3",
+    "Account": "608379566260",
+    "Arn": "arn:aws:iam::608379566260:user/vulnguard"
+  },
+  "dynamodb_table": {
+    "TableName": "VulnGuardAssessments",
+    "TableStatus": "ACTIVE",
+    "KeySchema": [
+      {
+        "AttributeName": "assessment_id",
+        "KeyType": "HASH"
+      }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "GlobalSecondaryIndexes": [
+      {
+        "IndexName": "HistoryIndex",
+        "KeySchema": [
+          {"AttributeName": "entity_type", "KeyType": "HASH"},
+          {"AttributeName": "sort_key", "KeyType": "RANGE"}
+        ],
+        "Projection": {"ProjectionType": "ALL"}
+      },
+      {
+        "IndexName": "CveHistoryIndex",
+        "KeySchema": [
+          {"AttributeName": "cve_id", "KeyType": "HASH"},
+          {"AttributeName": "sort_key", "KeyType": "RANGE"}
+        ],
+        "Projection": {"ProjectionType": "ALL"}
+      }
+    ],
+    "ItemCount": 71,
+    "Region": "us-east-1"
+  },
+  "api_gateway": {
+    "ApiId": "0n159e640h",
+    "ApiEndpoint": "https://0n159e640h.execute-api.us-east-1.amazonaws.com",
+    "ProtocolType": "HTTP",
+    "CorsConfiguration": {
+      "AllowOrigins": [
+        "https://vulnguard-ai.buildwithaveeck.com",
+        "https://vulnguard.buildwithaveeck.com",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+      ],
+      "AllowMethods": ["GET", "POST", "OPTIONS"],
+      "AllowHeaders": ["content-type", "authorization", "x-requested-with"],
+      "MaxAge": 3600
+    }
+  },
+  "lambda_function": {
+    "FunctionName": "vulnguard-ai-backend-VulnGuardApiFunction-rTB8qU714gex",
+    "Runtime": "python3.12",
+    "Handler": "backend.app.main.handler",
+    "MemorySize": 512,
+    "Timeout": 29,
+    "EnvironmentVariableKeys": [
+      "SSM_NVD_API_KEY_PARAM",
+      "ENVIRONMENT",
+      "DATABASE_BACKEND",
+      "DYNAMODB_TABLE_NAME",
+      "SSM_NVIDIA_API_KEY_PARAM",
+      "USE_BEDROCK_MOCK",
+      "CORS_ORIGINS",
+      "BEDROCK_MODEL_ID",
+      "DEBUG",
+      "NVIDIA_MODEL_ID"
+    ]
+  },
+  "ssm_parameters": [
+    {
+      "Name": "/vulnguard/nvd_api_key",
+      "Type": "SecureString"
+    },
+    {
+      "Name": "/vulnguard/nvidia_api_key",
+      "Type": "SecureString"
+    }
+  ]
+}

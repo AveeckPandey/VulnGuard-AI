@@ -4,6 +4,7 @@ Fetches Exploit Prediction Scoring System (EPSS) probability and percentile rank
 Caches scores for 24 hours (scores update daily from FIRST.org).
 """
 import asyncio
+import json
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 import httpx
@@ -13,11 +14,16 @@ from backend.core.logging import logger
 from backend.schemas.intelligence import EpssIntel, IntelSourceStatus
 from backend.services.cache import epss_cache
 from backend.services.rate_limiter import calculate_backoff_with_jitter
-from backend.tests.fixtures.simulated_intel import SIMULATED_CVE_FIXTURES
+from backend.services.simulated_intel import SIMULATED_CVE_FIXTURES
 
 
 class EpssService:
     """Service client for FIRST.org EPSS API."""
+
+    def __init__(self):
+        self.last_status: str = "operational"
+        self.last_error: Optional[str] = None
+        self.last_check_time: Optional[str] = None
 
     async def fetch_epss(self, cve_id: str, simulate_offline: bool = False) -> EpssIntel:
         cve_id = cve_id.strip().upper()
@@ -50,10 +56,22 @@ class EpssService:
                     )
 
                 if response.status_code == 200:
-                    data = response.json()
+                    try:
+                        data = response.json()
+                    except (json.JSONDecodeError, ValueError) as json_err:
+                        self.last_status = "degraded"
+                        self.last_error = f"Malformed upstream JSON: {str(json_err)[:100]}"
+                        self.last_check_time = datetime.now(timezone.utc).isoformat()
+                        logger.warning(f"[EPSS] Malformed non-JSON response on attempt {attempt + 1}: {json_err}")
+                        if attempt < max_retries - 1:
+                            backoff = calculate_backoff_with_jitter(attempt, base_delay=1.0, max_delay=4.0)
+                            await asyncio.sleep(backoff)
+                            continue
+                        return self._build_unavailable(cve_id)
+
                     epss_list = data.get("data", [])
-                    if epss_list:
-                        item = epss_list[0]
+                    item = next((row for row in epss_list if row.get("cve") == cve_id), None)
+                    if item and item.get("epss") is not None:
                         prob_str = item.get("epss")
                         pct_str = item.get("percentile")
                         model_date = item.get("date")
@@ -71,6 +89,9 @@ class EpssService:
                             source_url=f"https://api.first.org/data/v1/epss?cve={cve_id}",
                             is_simulated=False,
                         )
+                        self.last_status = "operational"
+                        self.last_error = None
+                        self.last_check_time = datetime.now(timezone.utc).isoformat()
                         epss_cache.set(cve_id, intel, ttl_seconds=settings.EPSS_CACHE_TTL_HOURS * 3600.0)
                         return intel
                     else:
@@ -78,13 +99,22 @@ class EpssService:
                         return self._build_missing(cve_id)
 
                 if response.status_code == 429:
+                    self.last_status = "rate_limited"
+                    self.last_error = "EPSS rate limited (HTTP 429)"
+                    self.last_check_time = datetime.now(timezone.utc).isoformat()
                     backoff = calculate_backoff_with_jitter(attempt, base_delay=1.0, max_delay=5.0)
                     await asyncio.sleep(backoff)
                     continue
 
+                self.last_status = "degraded"
+                self.last_error = f"HTTP {response.status_code}"
+                self.last_check_time = datetime.now(timezone.utc).isoformat()
                 logger.error(f"[EPSS] Status {response.status_code}: {response.text[:150]}")
 
             except httpx.RequestError as exc:
+                self.last_status = "unreachable"
+                self.last_error = str(exc)[:120]
+                self.last_check_time = datetime.now(timezone.utc).isoformat()
                 logger.warning(f"[EPSS] Network error fetching {cve_id}: {exc}")
                 if attempt < max_retries - 1:
                     backoff = calculate_backoff_with_jitter(attempt, base_delay=1.0, max_delay=4.0)

@@ -2,6 +2,9 @@
 VulnGuard AI - Core Configuration Module
 Handles environment variables and application settings using Pydantic Settings.
 """
+import warnings
+warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
+
 from typing import List, Union
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -42,16 +45,63 @@ class Settings(BaseSettings):
                 return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
 
+    # API Security & Authentication
+    REQUIRE_AUTH: bool = False
+    API_KEY: str = ""
+    SSM_API_KEY_PARAM: str = "/vulnguard/api_key"
+
+    @property
+    def is_auth_required(self) -> bool:
+        """Authentication is required in production or when explicitly configured via REQUIRE_AUTH."""
+        return self.REQUIRE_AUTH or self.ENVIRONMENT == "production"
+
+    def get_api_key(self) -> str:
+        """Returns API key from environment variable or AWS SSM Parameter Store (cached)."""
+        if self.API_KEY.strip():
+            return self.API_KEY.strip()
+        
+        global _CACHED_SSM_API_KEY
+        if _CACHED_SSM_API_KEY:
+            return _CACHED_SSM_API_KEY
+            
+        try:
+            import boto3
+            ssm = boto3.client("ssm", region_name=self.AWS_REGION)
+            response = ssm.get_parameter(Name=self.SSM_API_KEY_PARAM, WithDecryption=True)
+            _CACHED_SSM_API_KEY = response["Parameter"]["Value"].strip()
+            return _CACHED_SSM_API_KEY
+        except Exception:
+            return ""
+
     # NIST NVD Threat Intelligence
     NVD_API_KEY: str = ""
+    SSM_NVD_API_KEY_PARAM: str = "/vulnguard/nvd_api_key"
     NVD_BASE_URL: str = "https://services.nvd.nist.gov/rest/json/cves/2.0"
     NVD_CACHE_TTL_HOURS: int = 12
     NVD_TIMEOUT_SECONDS: float = 15.0
 
+    def get_nvd_api_key(self) -> str:
+        """Returns the NVD API key from environment variable or AWS SSM Parameter Store (cached)."""
+        if self.NVD_API_KEY.strip():
+            return self.NVD_API_KEY.strip()
+        
+        global _CACHED_SSM_NVD_KEY
+        if _CACHED_SSM_NVD_KEY:
+            return _CACHED_SSM_NVD_KEY
+            
+        try:
+            import boto3
+            ssm = boto3.client("ssm", region_name=self.AWS_REGION)
+            response = ssm.get_parameter(Name=self.SSM_NVD_API_KEY_PARAM, WithDecryption=True)
+            _CACHED_SSM_NVD_KEY = response["Parameter"]["Value"].strip()
+            return _CACHED_SSM_NVD_KEY
+        except Exception:
+            return ""
+
     @property
     def nvd_rate_limit_calls(self) -> int:
         """50 calls per 30s with key, 5 calls per 30s without key."""
-        return 50 if self.NVD_API_KEY.strip() else 5
+        return 50 if self.get_nvd_api_key().strip() else 5
 
     @property
     def nvd_rate_limit_period(self) -> float:
@@ -105,5 +155,7 @@ class Settings(BaseSettings):
 
 
 _CACHED_SSM_NVIDIA_KEY: str = ""
+_CACHED_SSM_NVD_KEY: str = ""
+_CACHED_SSM_API_KEY: str = ""
 
 settings = Settings()

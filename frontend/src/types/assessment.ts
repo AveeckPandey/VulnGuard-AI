@@ -54,7 +54,7 @@ export interface EpssIntel {
 export interface CisaKevIntel {
   cve_id: string;
   status: IntelSourceStatus;
-  is_known_exploited: boolean;
+  is_known_exploited: boolean | null;
   vulnerability_name: string | null;
   date_added: string | null;
   required_action: string | null;
@@ -106,7 +106,7 @@ export interface AssessmentSummary {
   total_score: number;
   cvss_base_score: number | null;
   epss_probability: number | null;
-  is_known_exploited: boolean;
+  is_known_exploited: boolean | null;
   asset_criticality: AssetCriticality;
   internet_exposure: InternetExposure;
   created_at: string;

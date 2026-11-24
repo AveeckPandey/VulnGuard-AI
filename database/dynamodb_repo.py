@@ -146,7 +146,7 @@ class DynamoDBAssessmentRepository(AssessmentRepository):
         """Retrieves an assessment item by primary key (assessment_id)."""
         try:
             # First try assessment_id partition key
-            response = self._table.get_item(Key={"assessment_id": assessment_id})
+            response = self._table.get_item(Key={"assessment_id": assessment_id}, ConsistentRead=True)
             item = response.get("Item")
 
             # Fallback to id partition key for legacy records

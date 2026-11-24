@@ -3,6 +3,10 @@ VulnGuard AI - Pytest Configuration and Shared Fixtures
 """
 import sys
 import os
+import warnings
+warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 import pytest
 from pathlib import Path
 

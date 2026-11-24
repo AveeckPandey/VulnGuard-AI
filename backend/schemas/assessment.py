@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 from backend.schemas.risk import AssetCriticality, InternetExposure, RiskScoreBreakdown
 from backend.schemas.intelligence import AggregatedIntel
 
-CVE_PATTERN = re.compile(r"^CVE-\d{4}-\d{4,8}$", re.IGNORECASE)
+CVE_PATTERN = re.compile(r"CVE-[0-9]{4}-[0-9]{4,}")
 
 
 class AssessmentRequest(BaseModel):
@@ -22,7 +22,7 @@ class AssessmentRequest(BaseModel):
     @classmethod
     def validate_and_normalize_cve_id(cls, v: str) -> str:
         clean = v.strip().upper()
-        if not CVE_PATTERN.match(clean):
+        if not CVE_PATTERN.fullmatch(clean):
             raise ValueError(f"Invalid CVE ID format: '{v}'. Must match standard pattern 'CVE-YYYY-NNNN+' (e.g. CVE-2021-44228).")
         return clean
 

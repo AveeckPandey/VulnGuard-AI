@@ -1,0 +1,124 @@
+{
+  "CVE-2026-99221": {
+    "published": "2026-11-02T16:17:46.293",
+    "description": "keys/trusted_keys: return immediately after TPM unseal failure",
+    "cvssData": {},
+    "reference": "https://git.kernel.org/stable/c/234d09bb3b3d84851d4b3246272addc30f3353eb",
+    "epss": {"cve": "CVE-2026-99221", "epss": "0.002110000", "percentile": "0.112650000", "date": "2026-11-23"},
+    "kev": null
+  },
+  "CVE-2023-34362": {
+    "published": "2023-06-02T14:15:09.487",
+    "description": "In Progress MOVEit Transfer before 2021.0.6 (13.0.6), 2021.1.4 (13.1.4), 2022.0.4 (14.0.4), 2022.1.5 (14.1.5), and 2023.0.1 (15.0.1), a SQL…",
+    "metric": "cvssMetricV31",
+    "cvssData": {
+      "version": "3.1",
+      "baseScore": 9.8,
+      "baseSeverity": "CRITICAL",
+      "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    },
+    "weakness": "CWE-89",
+    "reference": "https://community.progress.com/s/article/MOVEit-Transfer-Critical-Vulnerability-31May2023",
+    "epss": {
+      "cve": "CVE-2023-34362",
+      "epss": "0.999340000",
+      "percentile": "0.999710000",
+      "date": "2026-11-22"
+    },
+    "kev": {
+      "cveID": "CVE-2023-34362",
+      "vulnerabilityName": "Progress MOVEit Transfer SQL Injection Vulnerability",
+      "dateAdded": "2023-06-02",
+      "requiredAction": "Apply updates per vendor instructions."
+    }
+  },
+  "CVE-2024-3094": {
+    "published": "2024-03-29T17:15:21.150",
+    "description": "Malicious code was discovered in the upstream tarballs of xz, starting with version 5.6.0…",
+    "metric": "cvssMetricV31",
+    "cvssData": {
+      "version": "3.1",
+      "baseScore": 10,
+      "baseSeverity": "CRITICAL",
+      "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
+    },
+    "weakness": "CWE-506",
+    "reference": "https://access.redhat.com/security/cve/CVE-2024-3094",
+    "epss": {
+      "cve": "CVE-2024-3094",
+      "epss": "0.909000000",
+      "percentile": "0.998090000",
+      "date": "2026-11-22"
+    },
+    "kev": null
+  },
+  "CVE-2024-6387": {
+    "published": "2024-07-01T13:15:06.467",
+    "description": "A security regression (CVE-2006-5051) was discovered in OpenSSH's server (sshd)…",
+    "metric": "cvssMetricV31",
+    "cvssData": {
+      "version": "3.1",
+      "baseScore": 8.1,
+      "baseSeverity": "HIGH",
+      "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    },
+    "weakness": "CWE-364",
+    "reference": "https://access.redhat.com/errata/RHSA-2024:4312",
+    "epss": {
+      "cve": "CVE-2024-6387",
+      "epss": "0.995060000",
+      "percentile": "0.999460000",
+      "date": "2026-11-22"
+    },
+    "kev": null
+  },
+  "CVE-2014-0160": {
+    "published": "2014-04-07T22:55:03.893",
+    "description": "The (1) TLS and (2) DTLS implementations in OpenSSL 1.0.1 before 1.0.1g do not properly handle Heartbeat Extension…",
+    "metric": "cvssMetricV31",
+    "cvssData": {
+      "version": "3.1",
+      "baseScore": 7.5,
+      "baseSeverity": "HIGH",
+      "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+    },
+    "weakness": "CWE-125",
+    "reference": "http://advisories.mageia.org/MGASA-2014-0165.html",
+    "epss": {
+      "cve": "CVE-2014-0160",
+      "epss": "0.999990000",
+      "percentile": "0.999970000",
+      "date": "2026-11-23"
+    },
+    "kev": {
+      "cveID": "CVE-2014-0160",
+      "vulnerabilityName": "OpenSSL Information Disclosure Vulnerability",
+      "dateAdded": "2022-05-04",
+      "requiredAction": "Apply updates per vendor instructions."
+    }
+  },
+  "CVE-2021-44228": {
+    "published": "2021-12-10T10:15:09.143",
+    "description": "Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12.3, and 2.3.1) JNDI features…",
+    "weakness": "CWE-20",
+    "metric": "cvssMetricV31",
+    "cvssData": {
+      "version": "3.1",
+      "baseScore": 10,
+      "baseSeverity": "CRITICAL",
+      "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
+    },
+    "epss": {
+      "cve": "CVE-2021-44228",
+      "epss": "0.999990000",
+      "percentile": "1.000000000",
+      "date": "2026-11-22"
+    },
+    "kev": {
+      "cveID": "CVE-2021-44228",
+      "vulnerabilityName": "Apache Log4j2 Remote Code Execution Vulnerability",
+      "dateAdded": "2021-12-10"
+    },
+    "reference": "https://logging.apache.org/log4j/2.x/security.html"
+  }
+}

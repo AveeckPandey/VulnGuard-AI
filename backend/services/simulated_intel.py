@@ -1,5 +1,5 @@
 """
-VulnGuard AI - Simulated Offline Threat Intelligence Fixtures
+VulnGuard AI - Offline Demonstration Intelligence
 Explicitly labeled as SIMULATED data for offline testing, CI/CD, and demo runs.
 """
 from typing import Dict, Any

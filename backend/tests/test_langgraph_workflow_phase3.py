@@ -13,7 +13,6 @@ from backend.agents.state import VulnGuardState
 from backend.schemas.assessment import AssessmentRequest
 from backend.schemas.risk import AssetCriticality, InternetExposure, PriorityLevel
 from backend.schemas.intelligence import IntelSourceStatus
-from backend.tests.fixtures.simulated_intel import SIMULATED_CVE_FIXTURES
 
 
 @pytest.mark.asyncio
@@ -46,7 +45,13 @@ async def test_node1_resilience_to_feed_crash():
     }
 
     # Simulate NVD throwing unexpected RuntimeError
-    with patch("backend.services.nvd_service.nvd_service.fetch_cve", side_effect=RuntimeError("NVD service crashed")):
+    from backend.tests.test_scorer import build_mock_intel
+    available = build_mock_intel(cvss=10, epss_prob=0.4, is_kev=True)
+    with (
+        patch("backend.services.nvd_service.nvd_service.fetch_cve", side_effect=RuntimeError("NVD service crashed")),
+        patch("backend.services.epss_service.epss_service.fetch_epss", return_value=available.epss),
+        patch("backend.services.cisa_service.cisa_service.get_cisa_kev", return_value=available.cisa_kev),
+    ):
         result = await intelligence_collection_node(state)
         assert "intelligence" in result
         intel = result["intelligence"]

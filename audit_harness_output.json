@@ -1,0 +1,1407 @@
+{
+  "live_connectivity": {
+    "health": {
+      "status_code": 200,
+      "latency_ms": 794.01,
+      "payload": {
+        "status": "healthy",
+        "service": "VulnGuard AI",
+        "environment": "production",
+        "version": "1.0.0",
+        "database_backend": "dynamodb",
+        "timestamp": "2026-11-24T04:54:25.845604+00:00"
+      }
+    },
+    "intel_status": {
+      "status_code": 200,
+      "latency_ms": 752.51,
+      "payload": {
+        "status": "operational",
+        "feeds": {
+          "nist_nvd": {
+            "name": "NIST National Vulnerability Database API 2.0",
+            "status": "operational",
+            "authenticated": true,
+            "rate_limit_tier": "50 req / 30s",
+            "last_error": null,
+            "last_check": "2026-11-24T04:51:23.004313+00:00",
+            "cached_items": 1,
+            "ttl_hours": 12
+          },
+          "first_epss": {
+            "name": "FIRST.org Exploit Prediction Scoring System",
+            "status": "operational",
+            "last_error": null,
+            "last_check": "2026-11-24T04:51:22.884790+00:00",
+            "cached_items": 1,
+            "ttl_hours": 24
+          },
+          "cisa_kev": {
+            "name": "CISA Known Exploited Vulnerabilities Catalog",
+            "status": "operational",
+            "catalog_loaded": true,
+            "known_exploited_cves_count": 1792,
+            "last_error": null,
+            "last_check": "2026-11-24T04:51:22.984584+00:00",
+            "ttl_hours": 6
+          }
+        }
+      }
+    },
+    "history": {
+      "status_code": 200,
+      "latency_ms": 823.28,
+      "item_count": 50
+    }
+  },
+  "cve_lookups": [
+    {
+      "cve_id": "CVE-2021-44228",
+      "status_code": 201,
+      "duration_ms": 5336.68,
+      "assessment_id": "vg-63509bab32ab",
+      "total_score": 100.0,
+      "priority": "CRITICAL",
+      "is_provisional": false,
+      "cvss_score": 10.0,
+      "cvss_version": "3.1",
+      "epss_prob": 0.99999,
+      "epss_pct": 1.0,
+      "is_kev": true,
+      "weaknesses": [
+        "CWE-20",
+        "CWE-400",
+        "CWE-502",
+        "CWE-917"
+      ],
+      "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+      "is_fallback": false,
+      "citations": [
+        "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+        "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2021-44228",
+        "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "http://packetstormsecurity.com/files/165225/Apache-Log4j2-2.14.1-Remote-Code-Execution.html",
+        "http://packetstormsecurity.com/files/165260/VMware-Security-Advisory-2021-0028.html",
+        "http://packetstormsecurity.com/files/165261/Apache-Log4j2-2.14.1-Information-Disclosure.html",
+        "http://packetstormsecurity.com/files/165270/Apache-Log4j2-2.14.1-Remote-Code-Execution.html"
+      ],
+      "remediation_steps": [
+        "Step 1: Upgrade Apache Log4j2 to version 2.16.0 or later (or 2.12.2/2.12.3/2.3.1 if applicable, ensuring all security fixes are present).",
+        "Step 2: If immediate patching is impossible, remove affected assets from agency networks as per CISA guidance."
+      ],
+      "raw": {
+        "id": "vg-63509bab32ab",
+        "cve_id": "CVE-2021-44228",
+        "asset_criticality": "CRITICAL",
+        "internet_exposure": "PUBLIC_FACING",
+        "system_context": "Apache Log4j Core Logging Server",
+        "intelligence": {
+          "cve_id": "CVE-2021-44228",
+          "nvd": {
+            "cve_id": "CVE-2021-44228",
+            "status": "AVAILABLE",
+            "description": "Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12.3, and 2.3.1) JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled. From log4j 2.15.0, this behavior has been disabled by default. From version 2.16.0 (along with 2.12.2, 2.12.3, and 2.3.1), this functionality has been completely removed. Note that this vulnerability is specific to log4j-core and does not affect log4net, log4cxx, or other Apache Logging Services projects.",
+            "cvss_version": "3.1",
+            "cvss_base_score": 10.0,
+            "cvss_severity": "CRITICAL",
+            "cvss_vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "published_date": "2021-12-10T10:15:09.143",
+            "last_modified_date": "2026-08-11T19:33:44.513",
+            "references": [
+              "http://packetstormsecurity.com/files/165225/Apache-Log4j2-2.14.1-Remote-Code-Execution.html",
+              "http://packetstormsecurity.com/files/165260/VMware-Security-Advisory-2021-0028.html",
+              "http://packetstormsecurity.com/files/165261/Apache-Log4j2-2.14.1-Information-Disclosure.html",
+              "http://packetstormsecurity.com/files/165270/Apache-Log4j2-2.14.1-Remote-Code-Execution.html",
+              "http://packetstormsecurity.com/files/165281/Log4j2-Log4Shell-Regexes.html",
+              "http://packetstormsecurity.com/files/165282/Log4j-Payload-Generator.html",
+              "http://packetstormsecurity.com/files/165306/L4sh-Log4j-Remote-Code-Execution.html",
+              "http://packetstormsecurity.com/files/165307/Log4j-Remote-Code-Execution-Word-Bypassing.html"
+            ],
+            "weaknesses": [
+              "CWE-20",
+              "CWE-400",
+              "CWE-502",
+              "CWE-917"
+            ],
+            "fetched_at": "2026-11-24T04:54:28.512001+00:00",
+            "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+            "is_simulated": false
+          },
+          "epss": {
+            "cve_id": "CVE-2021-44228",
+            "status": "AVAILABLE",
+            "epss_probability": 0.99999,
+            "epss_percentile": 1.0,
+            "model_date": "2026-11-23",
+            "fetched_at": "2026-11-24T04:54:28.344982+00:00",
+            "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2021-44228",
+            "is_simulated": false
+          },
+          "cisa_kev": {
+            "cve_id": "CVE-2021-44228",
+            "status": "AVAILABLE",
+            "is_known_exploited": true,
+            "vulnerability_name": "Apache Log4j2 Remote Code Execution Vulnerability",
+            "date_added": "2021-12-10",
+            "required_action": "For all affected software assets for which updates exist, the only acceptable remediation actions are: 1) Apply updates; OR 2) remove affected assets from agency networks. Temporary mitigations using one of the measures provided at https://www.cisa.gov/uscert/ed-22-02-apache-log4j-recommended-mitigation-measures are only acceptable until updates are available.",
+            "due_date": "2021-12-24",
+            "known_ransomware_use": "Known",
+            "notes": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+            "fetched_at": "2026-11-24T04:54:28.303469+00:00",
+            "source_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "is_simulated": false
+          },
+          "is_simulated": false
+        },
+        "risk_score": {
+          "total_score": 100.0,
+          "priority_level": "CRITICAL",
+          "is_provisional": false,
+          "provisional_reasons": [],
+          "components": [
+            {
+              "name": "CVSS Severity",
+              "raw_value": 10.0,
+              "normalized_score": 100.0,
+              "weight": 0.3,
+              "weighted_contribution": 30.0,
+              "description": "CVSS base score 10.0/10.0 normalized to 100.0/100"
+            },
+            {
+              "name": "EPSS Exploitation Probability",
+              "raw_value": "1.0000",
+              "normalized_score": 100.0,
+              "weight": 0.3,
+              "weighted_contribution": 30.0,
+              "description": "FIRST EPSS probability 1.0000 (100.00%) normalized to 100.0/100"
+            },
+            {
+              "name": "CISA KEV In-The-Wild Exploitation",
+              "raw_value": true,
+              "normalized_score": 100.0,
+              "weight": 0.2,
+              "weighted_contribution": 20.0,
+              "description": "Confirmed active in-the-wild exploitation listed in CISA KEV catalog (100/100)."
+            },
+            {
+              "name": "Asset Business Criticality",
+              "raw_value": "CRITICAL",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Operational criticality tier 'CRITICAL' scored at 100.0/100."
+            },
+            {
+              "name": "Network Perimeter Exposure",
+              "raw_value": "PUBLIC_FACING",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Perimeter exposure 'PUBLIC_FACING' scored at 100.0/100."
+            }
+          ],
+          "summary": "Prioritization score: 100.0/100 (CRITICAL). Driven by CVSS contribution (30.0 pts), EPSS exploitation probability (30.0 pts), CISA KEV presence (20.0 pts), asset tier (10.0 pts), and exposure (10.0 pts).",
+          "formula_disclaimer": "Custom portfolio heuristic scoring model (CVSS 30%, EPSS 30%, KEV 20%, Criticality 10%, Exposure 10%). Not an official NIST/CISA risk standard."
+        },
+        "remediation": {
+          "executive_summary": "CVE-2021-44228 (Log4Shell) is a critical RCE vulnerability in Apache Log4j2, rated 10.0 CVSS. Due to its inclusion in CISA KEV and 100% EPSS probability, immediate patching or network isolation is mandatory to prevent widespread, active exploitation.",
+          "technical_impact": "The vulnerability exists in Log4j2 versions 2.0-beta9 through 2.15.0, allowing an attacker to execute arbitrary code by injecting malicious strings into log messages. This is achieved via JNDI lookups (e.g., LDAP), leading to full system compromise on affected servers running the Log4j core library.",
+          "exploitation_assessment": "The combination of a 1.0000 EPSS exploitation probability and confirmed listing in the CISA KEV catalog indicates this vulnerability is not theoretical but is actively exploited in the wild with extremely high certainty.",
+          "remediation_steps": [
+            "Step 1: Upgrade Apache Log4j2 to version 2.16.0 or later (or 2.12.2/2.12.3/2.3.1 if applicable, ensuring all security fixes are present).",
+            "Step 2: If immediate patching is impossible, remove affected assets from agency networks as per CISA guidance."
+          ],
+          "mitigation_workarounds": [
+            "Disable JNDI functionality via configuration changes or environment variables until patching is complete.",
+            "Implement WAF rules or network egress filtering to block outbound LDAP/RMI connections from application servers."
+          ],
+          "evidence_citations": [
+            "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+            "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2021-44228",
+            "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "http://packetstormsecurity.com/files/165225/Apache-Log4j2-2.14.1-Remote-Code-Execution.html",
+            "http://packetstormsecurity.com/files/165260/VMware-Security-Advisory-2021-0028.html",
+            "http://packetstormsecurity.com/files/165261/Apache-Log4j2-2.14.1-Information-Disclosure.html",
+            "http://packetstormsecurity.com/files/165270/Apache-Log4j2-2.14.1-Remote-Code-Execution.html"
+          ],
+          "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+          "is_fallback_deterministic": false
+        },
+        "created_at": "2026-11-24T04:54:28.253870+00:00",
+        "execution_time_ms": 4623.9,
+        "disclaimer": "VulnGuard AI risk score is a custom heuristic prioritization model. Always review critical findings against organizational policy."
+      }
+    },
+    {
+      "cve_id": "CVE-2023-34362",
+      "status_code": 201,
+      "duration_ms": 5079.91,
+      "assessment_id": "vg-381b2473cba9",
+      "total_score": 99.38,
+      "priority": "CRITICAL",
+      "is_provisional": false,
+      "cvss_score": 9.8,
+      "cvss_version": "3.1",
+      "epss_prob": 0.99934,
+      "epss_pct": 0.99971,
+      "is_kev": true,
+      "weaknesses": [
+        "CWE-89",
+        "CWE-89"
+      ],
+      "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+      "is_fallback": false,
+      "citations": [
+        "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2023-34362",
+        "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2023-34362",
+        "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "http://packetstormsecurity.com/files/172883/MOVEit-Transfer-SQL-Injection-Remote-Code-Execution.html",
+        "http://packetstormsecurity.com/files/173110/MOVEit-SQL-Injection.html",
+        "https://community.progress.com/s/article/MOVEit-Transfer-Critical-Vulnerability-31May2023",
+        "http://packetstormsecurity.com/files/172883/MOVEit-Transfer-SQL-Injection-Remote-Code-Execution.html"
+      ],
+      "remediation_steps": [
+        "Upgrade MOVEit Transfer to a patched version (e.g., 2021.0.6, 2021.1.4, 2022.0.4, 2022.1.5, or 2023.0.1 or later) as per vendor instructions.",
+        "Ensure all instances, including older unsupported versions, are identified and patched or decommissioned."
+      ],
+      "raw": {
+        "id": "vg-381b2473cba9",
+        "cve_id": "CVE-2023-34362",
+        "asset_criticality": "CRITICAL",
+        "internet_exposure": "PUBLIC_FACING",
+        "system_context": "MOVEit Transfer Web Application",
+        "intelligence": {
+          "cve_id": "CVE-2023-34362",
+          "nvd": {
+            "cve_id": "CVE-2023-34362",
+            "status": "AVAILABLE",
+            "description": "In Progress MOVEit Transfer before 2021.0.6 (13.0.6), 2021.1.4 (13.1.4), 2022.0.4 (14.0.4), 2022.1.5 (14.1.5), and 2023.0.1 (15.0.1), a SQL injection vulnerability has been found in the MOVEit Transfer web application that could allow an unauthenticated attacker to gain access to MOVEit Transfer's database. Depending on the database engine being used (MySQL, Microsoft SQL Server, or Azure SQL), an attacker may be able to infer information about the structure and contents of the database, and execute SQL statements that alter or delete database elements. NOTE: this is exploited in the wild in May and June 2023; exploitation of unpatched systems can occur via HTTP or HTTPS. All versions (e.g., 2020.0 and 2019x) before the five explicitly mentioned versions are affected, including older unsupported versions.",
+            "cvss_version": "3.1",
+            "cvss_base_score": 9.8,
+            "cvss_severity": "CRITICAL",
+            "cvss_vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "published_date": "2023-06-02T14:15:09.487",
+            "last_modified_date": "2026-06-17T06:03:28.760",
+            "references": [
+              "http://packetstormsecurity.com/files/172883/MOVEit-Transfer-SQL-Injection-Remote-Code-Execution.html",
+              "http://packetstormsecurity.com/files/173110/MOVEit-SQL-Injection.html",
+              "https://community.progress.com/s/article/MOVEit-Transfer-Critical-Vulnerability-31May2023",
+              "http://packetstormsecurity.com/files/172883/MOVEit-Transfer-SQL-Injection-Remote-Code-Execution.html",
+              "http://packetstormsecurity.com/files/173110/MOVEit-SQL-Injection.html",
+              "https://community.progress.com/s/article/MOVEit-Transfer-Critical-Vulnerability-31May2023",
+              "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2023-34362"
+            ],
+            "weaknesses": [
+              "CWE-89",
+              "CWE-89"
+            ],
+            "fetched_at": "2026-11-24T04:54:34.715842+00:00",
+            "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-34362",
+            "is_simulated": false
+          },
+          "epss": {
+            "cve_id": "CVE-2023-34362",
+            "status": "AVAILABLE",
+            "epss_probability": 0.99934,
+            "epss_percentile": 0.99971,
+            "model_date": "2026-11-23",
+            "fetched_at": "2026-11-24T04:54:34.665079+00:00",
+            "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2023-34362",
+            "is_simulated": false
+          },
+          "cisa_kev": {
+            "cve_id": "CVE-2023-34362",
+            "status": "AVAILABLE",
+            "is_known_exploited": true,
+            "vulnerability_name": "Progress MOVEit Transfer SQL Injection Vulnerability",
+            "date_added": "2023-06-02",
+            "required_action": "Apply updates per vendor instructions.",
+            "due_date": "2023-06-23",
+            "known_ransomware_use": "Known",
+            "notes": "This CVE has a CISA AA located here: https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-158a. Please see the AA for associated IOCs. Additional information is available at: https://community.progress.com/s/article/MOVEit-Transfer-Critical-Vulnerability-31May2023.;  https://nvd.nist.gov/vuln/detail/CVE-2023-34362",
+            "fetched_at": "2026-11-24T04:54:34.609908+00:00",
+            "source_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "is_simulated": false
+          },
+          "is_simulated": false
+        },
+        "risk_score": {
+          "total_score": 99.38,
+          "priority_level": "CRITICAL",
+          "is_provisional": false,
+          "provisional_reasons": [],
+          "components": [
+            {
+              "name": "CVSS Severity",
+              "raw_value": 9.8,
+              "normalized_score": 98.0,
+              "weight": 0.3,
+              "weighted_contribution": 29.4,
+              "description": "CVSS base score 9.8/10.0 normalized to 98.0/100"
+            },
+            {
+              "name": "EPSS Exploitation Probability",
+              "raw_value": "0.9993",
+              "normalized_score": 99.93,
+              "weight": 0.3,
+              "weighted_contribution": 29.98,
+              "description": "FIRST EPSS probability 0.9993 (99.93%) normalized to 99.93/100"
+            },
+            {
+              "name": "CISA KEV In-The-Wild Exploitation",
+              "raw_value": true,
+              "normalized_score": 100.0,
+              "weight": 0.2,
+              "weighted_contribution": 20.0,
+              "description": "Confirmed active in-the-wild exploitation listed in CISA KEV catalog (100/100)."
+            },
+            {
+              "name": "Asset Business Criticality",
+              "raw_value": "CRITICAL",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Operational criticality tier 'CRITICAL' scored at 100.0/100."
+            },
+            {
+              "name": "Network Perimeter Exposure",
+              "raw_value": "PUBLIC_FACING",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Perimeter exposure 'PUBLIC_FACING' scored at 100.0/100."
+            }
+          ],
+          "summary": "Prioritization score: 99.38/100 (CRITICAL). Driven by CVSS contribution (29.4 pts), EPSS exploitation probability (29.98 pts), CISA KEV presence (20.0 pts), asset tier (10.0 pts), and exposure (10.0 pts).",
+          "formula_disclaimer": "Custom portfolio heuristic scoring model (CVSS 30%, EPSS 30%, KEV 20%, Criticality 10%, Exposure 10%). Not an official NIST/CISA risk standard."
+        },
+        "remediation": {
+          "executive_summary": "CVE-2023-34362 is a critical SQL injection vulnerability in MOVEit Transfer, actively exploited in the wild. With a CVSS score of 9.8 and CISA KEV listing, immediate patching is required to prevent unauthorized database access and data exfiltration.",
+          "technical_impact": "An unauthenticated attacker can exploit this SQL injection flaw via HTTP/HTTPS to gain access to the MOVEit Transfer database (MySQL, MS SQL Server, Azure SQL). This allows for data inference, alteration, or deletion, leading to severe data breaches and operational disruption.",
+          "exploitation_assessment": "The exploitation probability is extremely high (EPSS: 0.9993), and the vulnerability is confirmed in the CISA Known Exploited Vulnerabilities catalog. This indicates active, widespread exploitation is occurring.",
+          "remediation_steps": [
+            "Upgrade MOVEit Transfer to a patched version (e.g., 2021.0.6, 2021.1.4, 2022.0.4, 2022.1.5, or 2023.0.1 or later) as per vendor instructions.",
+            "Ensure all instances, including older unsupported versions, are identified and patched or decommissioned."
+          ],
+          "mitigation_workarounds": [
+            "Restrict network access to the MOVEit Transfer application to trusted IP ranges only.",
+            "Implement Web Application Firewall (WAF) rules to detect and block common SQL injection patterns (e.g., UNION SELECT, OR 1=1)."
+          ],
+          "evidence_citations": [
+            "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2023-34362",
+            "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2023-34362",
+            "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "http://packetstormsecurity.com/files/172883/MOVEit-Transfer-SQL-Injection-Remote-Code-Execution.html",
+            "http://packetstormsecurity.com/files/173110/MOVEit-SQL-Injection.html",
+            "https://community.progress.com/s/article/MOVEit-Transfer-Critical-Vulnerability-31May2023",
+            "http://packetstormsecurity.com/files/172883/MOVEit-Transfer-SQL-Injection-Remote-Code-Execution.html"
+          ],
+          "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+          "is_fallback_deterministic": false
+        },
+        "created_at": "2026-11-24T04:54:34.564609+00:00",
+        "execution_time_ms": 4393.81,
+        "disclaimer": "VulnGuard AI risk score is a custom heuristic prioritization model. Always review critical findings against organizational policy."
+      }
+    },
+    {
+      "cve_id": "CVE-2024-3094",
+      "status_code": 201,
+      "duration_ms": 4976.13,
+      "assessment_id": "vg-4b54b48cea7f",
+      "total_score": 77.27,
+      "priority": "HIGH",
+      "is_provisional": false,
+      "cvss_score": 10.0,
+      "cvss_version": "3.1",
+      "epss_prob": 0.909,
+      "epss_pct": 0.99809,
+      "is_kev": false,
+      "weaknesses": [
+        "CWE-506"
+      ],
+      "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+      "is_fallback": false,
+      "citations": [
+        "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2024-3094",
+        "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2024-3094",
+        "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "https://access.redhat.com/security/cve/CVE-2024-3094",
+        "https://bugzilla.redhat.com/show_bug.cgi?id=2272210",
+        "https://www.openwall.com/lists/oss-security/2024/03/29/4",
+        "https://www.redhat.com/en/blog/urgent-security-alert-fedora-41-and-rawhide-users"
+      ],
+      "remediation_steps": [
+        "Upgrade XZ Utils to a patched version (post 5.6.0) immediately, as detailed in vendor advisories (e.g., Red Hat).",
+        "Audit all software dependencies to ensure no build processes are using the vulnerable XZ Utils versions."
+      ],
+      "raw": {
+        "id": "vg-4b54b48cea7f",
+        "cve_id": "CVE-2024-3094",
+        "asset_criticality": "CRITICAL",
+        "internet_exposure": "PUBLIC_FACING",
+        "system_context": "XZ Utils liblzma SSH Build Host",
+        "intelligence": {
+          "cve_id": "CVE-2024-3094",
+          "nvd": {
+            "cve_id": "CVE-2024-3094",
+            "status": "AVAILABLE",
+            "description": "Malicious code was discovered in the upstream tarballs of xz, starting with version 5.6.0. \r\nThrough a series of complex obfuscations, the liblzma build process extracts a prebuilt object file from a disguised test file existing in the source code, which is then used to modify specific functions in the liblzma code. This results in a modified liblzma library that can be used by any software linked against this library, intercepting and modifying the data interaction with this library.",
+            "cvss_version": "3.1",
+            "cvss_base_score": 10.0,
+            "cvss_severity": "CRITICAL",
+            "cvss_vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "published_date": "2024-03-29T17:15:21.150",
+            "last_modified_date": "2026-11-23T14:17:21.190",
+            "references": [
+              "https://access.redhat.com/security/cve/CVE-2024-3094",
+              "https://bugzilla.redhat.com/show_bug.cgi?id=2272210",
+              "https://www.openwall.com/lists/oss-security/2024/03/29/4",
+              "https://www.redhat.com/en/blog/urgent-security-alert-fedora-41-and-rawhide-users",
+              "http://www.openwall.com/lists/oss-security/2024/03/29/10",
+              "http://www.openwall.com/lists/oss-security/2024/03/29/12",
+              "http://www.openwall.com/lists/oss-security/2024/03/29/4",
+              "http://www.openwall.com/lists/oss-security/2024/03/29/5"
+            ],
+            "weaknesses": [
+              "CWE-506"
+            ],
+            "fetched_at": "2026-11-24T04:54:40.868813+00:00",
+            "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-3094",
+            "is_simulated": false
+          },
+          "epss": {
+            "cve_id": "CVE-2024-3094",
+            "status": "AVAILABLE",
+            "epss_probability": 0.909,
+            "epss_percentile": 0.99809,
+            "model_date": "2026-11-23",
+            "fetched_at": "2026-11-24T04:54:40.765540+00:00",
+            "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2024-3094",
+            "is_simulated": false
+          },
+          "cisa_kev": {
+            "cve_id": "CVE-2024-3094",
+            "status": "CONFIRMED_NEGATIVE",
+            "is_known_exploited": false,
+            "vulnerability_name": null,
+            "date_added": null,
+            "required_action": null,
+            "due_date": null,
+            "known_ransomware_use": null,
+            "notes": "This CVE was absent from the retrieved CISA KEV catalog.",
+            "fetched_at": "2026-11-24T04:54:40.723939+00:00",
+            "source_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "is_simulated": false
+          },
+          "is_simulated": false
+        },
+        "risk_score": {
+          "total_score": 77.27,
+          "priority_level": "HIGH",
+          "is_provisional": false,
+          "provisional_reasons": [],
+          "components": [
+            {
+              "name": "CVSS Severity",
+              "raw_value": 10.0,
+              "normalized_score": 100.0,
+              "weight": 0.3,
+              "weighted_contribution": 30.0,
+              "description": "CVSS base score 10.0/10.0 normalized to 100.0/100"
+            },
+            {
+              "name": "EPSS Exploitation Probability",
+              "raw_value": "0.9090",
+              "normalized_score": 90.9,
+              "weight": 0.3,
+              "weighted_contribution": 27.27,
+              "description": "FIRST EPSS probability 0.9090 (90.90%) normalized to 90.9/100"
+            },
+            {
+              "name": "CISA KEV In-The-Wild Exploitation",
+              "raw_value": false,
+              "normalized_score": 0.0,
+              "weight": 0.2,
+              "weighted_contribution": 0.0,
+              "description": "Confirmed NOT present in CISA KEV catalog (0/100)."
+            },
+            {
+              "name": "Asset Business Criticality",
+              "raw_value": "CRITICAL",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Operational criticality tier 'CRITICAL' scored at 100.0/100."
+            },
+            {
+              "name": "Network Perimeter Exposure",
+              "raw_value": "PUBLIC_FACING",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Perimeter exposure 'PUBLIC_FACING' scored at 100.0/100."
+            }
+          ],
+          "summary": "Prioritization score: 77.27/100 (HIGH). Driven by CVSS contribution (30.0 pts), EPSS exploitation probability (27.27 pts), CISA KEV presence (0.0 pts), asset tier (10.0 pts), and exposure (10.0 pts).",
+          "formula_disclaimer": "Custom portfolio heuristic scoring model (CVSS 30%, EPSS 30%, KEV 20%, Criticality 10%, Exposure 10%). Not an official NIST/CISA risk standard."
+        },
+        "remediation": {
+          "executive_summary": "CVE-2024-3094 is a critical vulnerability (CVSS 10.0) in XZ Utils (liblzma) stemming from malicious code in upstream tarballs. This flaw allows for data interception and modification in any software linked against the library, posing an extreme risk to systems utilizing XZ.",
+          "technical_impact": "The vulnerability exploits a complex obfuscation within the liblzma build process, causing a prebuilt object file from a disguised test file in the source code to modify core liblzma functions. The attack vector is present during the build/installation of affected software, leading to a compromised liblzma library capable of intercepting and modifying data interactions.",
+          "exploitation_assessment": "With an EPSS probability of 0.9090 and no current CISA KEV listing, the vulnerability has a very high predicted likelihood of exploitation in the wild, despite not yet being officially listed in KEV.",
+          "remediation_steps": [
+            "Upgrade XZ Utils to a patched version (post 5.6.0) immediately, as detailed in vendor advisories (e.g., Red Hat).",
+            "Audit all software dependencies to ensure no build processes are using the vulnerable XZ Utils versions."
+          ],
+          "mitigation_workarounds": [
+            "Restrict build environments and CI/CD pipelines to trusted, verified source tarballs only.",
+            "Implement network segmentation and strict egress filtering on build hosts to prevent unauthorized code execution during compilation."
+          ],
+          "evidence_citations": [
+            "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2024-3094",
+            "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2024-3094",
+            "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "https://access.redhat.com/security/cve/CVE-2024-3094",
+            "https://bugzilla.redhat.com/show_bug.cgi?id=2272210",
+            "https://www.openwall.com/lists/oss-security/2024/03/29/4",
+            "https://www.redhat.com/en/blog/urgent-security-alert-fedora-41-and-rawhide-users"
+          ],
+          "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+          "is_fallback_deterministic": false
+        },
+        "created_at": "2026-11-24T04:54:40.670191+00:00",
+        "execution_time_ms": 4266.09,
+        "disclaimer": "VulnGuard AI risk score is a custom heuristic prioritization model. Always review critical findings against organizational policy."
+      }
+    },
+    {
+      "cve_id": "CVE-2014-0160",
+      "status_code": 201,
+      "duration_ms": 21537.55,
+      "assessment_id": "vg-7664f9d8b430",
+      "total_score": 92.5,
+      "priority": "CRITICAL",
+      "is_provisional": false,
+      "cvss_score": 7.5,
+      "cvss_version": "3.1",
+      "epss_prob": 0.99999,
+      "epss_pct": 0.99997,
+      "is_kev": true,
+      "weaknesses": [
+        "CWE-125",
+        "CWE-125"
+      ],
+      "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+      "is_fallback": false,
+      "citations": [
+        "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2014-0160",
+        "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2014-0160",
+        "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "http://advisories.mageia.org/MGASA-2014-0165.html",
+        "http://blog.fox-it.com/2014/04/08/openssl-heartbleed-bug-live-blog/",
+        "http://cogentdatahub.com/ReleaseNotes.html",
+        "http://download.schneider-electric.com/files?p_Doc_Ref=SEVD%202014-119-01"
+      ],
+      "remediation_steps": [
+        "Step 1: Upgrade OpenSSL to version 1.0.1g or later immediately across all affected systems.",
+        "Step 2: Rotate all compromised credentials, including private keys and TLS certificates, as they may have been exposed."
+      ],
+      "raw": {
+        "id": "vg-7664f9d8b430",
+        "cve_id": "CVE-2014-0160",
+        "asset_criticality": "CRITICAL",
+        "internet_exposure": "PUBLIC_FACING",
+        "system_context": "OpenSSL Heartbleed Gateway",
+        "intelligence": {
+          "cve_id": "CVE-2014-0160",
+          "nvd": {
+            "cve_id": "CVE-2014-0160",
+            "status": "AVAILABLE",
+            "description": "The (1) TLS and (2) DTLS implementations in OpenSSL 1.0.1 before 1.0.1g do not properly handle Heartbeat Extension packets, which allows remote attackers to obtain sensitive information from process memory via crafted packets that trigger a buffer over-read, as demonstrated by reading private keys, related to d1_both.c and t1_lib.c, aka the Heartbleed bug.",
+            "cvss_version": "3.1",
+            "cvss_base_score": 7.5,
+            "cvss_severity": "HIGH",
+            "cvss_vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+            "published_date": "2014-04-07T22:55:03.893",
+            "last_modified_date": "2026-06-17T00:02:24.467",
+            "references": [
+              "http://advisories.mageia.org/MGASA-2014-0165.html",
+              "http://blog.fox-it.com/2014/04/08/openssl-heartbleed-bug-live-blog/",
+              "http://cogentdatahub.com/ReleaseNotes.html",
+              "http://download.schneider-electric.com/files?p_Doc_Ref=SEVD%202014-119-01",
+              "http://git.openssl.org/gitweb/?p=openssl.git%3Ba=commit%3Bh=96db9023b881d7cd9f379b0c154650d6c108e9a3",
+              "http://heartbleed.com/",
+              "http://lists.fedoraproject.org/pipermail/package-announce/2014-April/131221.html",
+              "http://lists.fedoraproject.org/pipermail/package-announce/2014-April/131291.html"
+            ],
+            "weaknesses": [
+              "CWE-125",
+              "CWE-125"
+            ],
+            "fetched_at": "2026-11-24T04:55:03.345406+00:00",
+            "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2014-0160",
+            "is_simulated": false
+          },
+          "epss": {
+            "cve_id": "CVE-2014-0160",
+            "status": "AVAILABLE",
+            "epss_probability": 0.99999,
+            "epss_percentile": 0.99997,
+            "model_date": "2026-11-23",
+            "fetched_at": "2026-11-24T04:54:46.837927+00:00",
+            "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2014-0160",
+            "is_simulated": false
+          },
+          "cisa_kev": {
+            "cve_id": "CVE-2014-0160",
+            "status": "AVAILABLE",
+            "is_known_exploited": true,
+            "vulnerability_name": "OpenSSL Information Disclosure Vulnerability",
+            "date_added": "2022-05-04",
+            "required_action": "Apply updates per vendor instructions.",
+            "due_date": "2022-05-25",
+            "known_ransomware_use": "Unknown",
+            "notes": "https://nvd.nist.gov/vuln/detail/CVE-2014-0160",
+            "fetched_at": "2026-11-24T04:54:46.767662+00:00",
+            "source_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "is_simulated": false
+          },
+          "is_simulated": false
+        },
+        "risk_score": {
+          "total_score": 92.5,
+          "priority_level": "CRITICAL",
+          "is_provisional": false,
+          "provisional_reasons": [],
+          "components": [
+            {
+              "name": "CVSS Severity",
+              "raw_value": 7.5,
+              "normalized_score": 75.0,
+              "weight": 0.3,
+              "weighted_contribution": 22.5,
+              "description": "CVSS base score 7.5/10.0 normalized to 75.0/100"
+            },
+            {
+              "name": "EPSS Exploitation Probability",
+              "raw_value": "1.0000",
+              "normalized_score": 100.0,
+              "weight": 0.3,
+              "weighted_contribution": 30.0,
+              "description": "FIRST EPSS probability 1.0000 (100.00%) normalized to 100.0/100"
+            },
+            {
+              "name": "CISA KEV In-The-Wild Exploitation",
+              "raw_value": true,
+              "normalized_score": 100.0,
+              "weight": 0.2,
+              "weighted_contribution": 20.0,
+              "description": "Confirmed active in-the-wild exploitation listed in CISA KEV catalog (100/100)."
+            },
+            {
+              "name": "Asset Business Criticality",
+              "raw_value": "CRITICAL",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Operational criticality tier 'CRITICAL' scored at 100.0/100."
+            },
+            {
+              "name": "Network Perimeter Exposure",
+              "raw_value": "PUBLIC_FACING",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Perimeter exposure 'PUBLIC_FACING' scored at 100.0/100."
+            }
+          ],
+          "summary": "Prioritization score: 92.5/100 (CRITICAL). Driven by CVSS contribution (22.5 pts), EPSS exploitation probability (30.0 pts), CISA KEV presence (20.0 pts), asset tier (10.0 pts), and exposure (10.0 pts).",
+          "formula_disclaimer": "Custom portfolio heuristic scoring model (CVSS 30%, EPSS 30%, KEV 20%, Criticality 10%, Exposure 10%). Not an official NIST/CISA risk standard."
+        },
+        "remediation": {
+          "executive_summary": "CVE-2014-0160, the Heartbleed bug in OpenSSL 1.0.1, represents a critical and highly exploited vulnerability allowing remote attackers to exfiltrate sensitive process memory, including private keys. Due to its inclusion in CISA KEV and 100% EPSS probability, immediate patching is mandatory to prevent catastrophic data breaches.",
+          "technical_impact": "The vulnerability exists in the TLS/DTLS Heartbeat Extension handling within OpenSSL 1.0.1 prior to 1.0.1g. Attackers exploit this buffer over-read via crafted packets to read arbitrary process memory, leading to the theft of private keys, session cookies, and other sensitive credentials, severely compromising confidentiality.",
+          "exploitation_assessment": "With an EPSS probability of 1.0000 and active listing in the CISA KEV catalog, this vulnerability is not theoretical but is actively exploited in the wild with near certainty of successful attack if unpatched.",
+          "remediation_steps": [
+            "Step 1: Upgrade OpenSSL to version 1.0.1g or later immediately across all affected systems.",
+            "Step 2: Rotate all compromised credentials, including private keys and TLS certificates, as they may have been exposed."
+          ],
+          "mitigation_workarounds": [
+            "Implement strict network segmentation to limit exposure of vulnerable services.",
+            "Monitor for unusual outbound traffic or memory access patterns indicative of exploitation attempts."
+          ],
+          "evidence_citations": [
+            "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2014-0160",
+            "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2014-0160",
+            "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "http://advisories.mageia.org/MGASA-2014-0165.html",
+            "http://blog.fox-it.com/2014/04/08/openssl-heartbleed-bug-live-blog/",
+            "http://cogentdatahub.com/ReleaseNotes.html",
+            "http://download.schneider-electric.com/files?p_Doc_Ref=SEVD%202014-119-01"
+          ],
+          "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+          "is_fallback_deterministic": false
+        },
+        "created_at": "2026-11-24T04:54:46.718321+00:00",
+        "execution_time_ms": 20739.45,
+        "disclaimer": "VulnGuard AI risk score is a custom heuristic prioritization model. Always review critical findings against organizational policy."
+      }
+    },
+    {
+      "cve_id": "CVE-2023-4863",
+      "status_code": 201,
+      "duration_ms": 4728.86,
+      "assessment_id": "vg-a8e61ae340a4",
+      "total_score": 93.39,
+      "priority": "CRITICAL",
+      "is_provisional": false,
+      "cvss_score": 8.8,
+      "cvss_version": "3.1",
+      "epss_prob": 0.99979,
+      "epss_pct": 0.9998,
+      "is_kev": true,
+      "weaknesses": [
+        "CWE-787",
+        "CWE-787"
+      ],
+      "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+      "is_fallback": false,
+      "citations": [
+        "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2023-4863",
+        "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2023-4863",
+        "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "http://www.openwall.com/lists/oss-security/2023/09/21/4",
+        "http://www.openwall.com/lists/oss-security/2023/09/22/1",
+        "http://www.openwall.com/lists/oss-security/2023/09/22/3",
+        "http://www.openwall.com/lists/oss-security/2023/09/22/4"
+      ],
+      "remediation_steps": [
+        "Upgrade Google Chrome to version 116.0.5845.187 or later, or update the libwebp library to version 1.3.2 or newer.",
+        "Ensure all endpoints running affected versions are scanned and patched according to vendor advisories."
+      ],
+      "raw": {
+        "id": "vg-a8e61ae340a4",
+        "cve_id": "CVE-2023-4863",
+        "asset_criticality": "HIGH",
+        "internet_exposure": "PUBLIC_FACING",
+        "system_context": "Google Chrome WebP Image Library",
+        "intelligence": {
+          "cve_id": "CVE-2023-4863",
+          "nvd": {
+            "cve_id": "CVE-2023-4863",
+            "status": "AVAILABLE",
+            "description": "Heap buffer overflow in libwebp in Google Chrome prior to 116.0.5845.187 and libwebp 1.3.2 allowed a remote attacker to perform an out of bounds memory write via a crafted HTML page. (Chromium security severity: Critical)",
+            "cvss_version": "3.1",
+            "cvss_base_score": 8.8,
+            "cvss_severity": "HIGH",
+            "cvss_vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+            "published_date": "2023-09-12T15:15:24.327",
+            "last_modified_date": "2026-06-17T06:38:46.547",
+            "references": [
+              "http://www.openwall.com/lists/oss-security/2023/09/21/4",
+              "http://www.openwall.com/lists/oss-security/2023/09/22/1",
+              "http://www.openwall.com/lists/oss-security/2023/09/22/3",
+              "http://www.openwall.com/lists/oss-security/2023/09/22/4",
+              "http://www.openwall.com/lists/oss-security/2023/09/22/5",
+              "http://www.openwall.com/lists/oss-security/2023/09/22/6",
+              "http://www.openwall.com/lists/oss-security/2023/09/22/7",
+              "http://www.openwall.com/lists/oss-security/2023/09/22/8"
+            ],
+            "weaknesses": [
+              "CWE-787",
+              "CWE-787"
+            ],
+            "fetched_at": "2026-11-24T04:55:09.293752+00:00",
+            "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-4863",
+            "is_simulated": false
+          },
+          "epss": {
+            "cve_id": "CVE-2023-4863",
+            "status": "AVAILABLE",
+            "epss_probability": 0.99979,
+            "epss_percentile": 0.9998,
+            "model_date": "2026-11-23",
+            "fetched_at": "2026-11-24T04:55:09.274156+00:00",
+            "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2023-4863",
+            "is_simulated": false
+          },
+          "cisa_kev": {
+            "cve_id": "CVE-2023-4863",
+            "status": "AVAILABLE",
+            "is_known_exploited": true,
+            "vulnerability_name": "Google Chromium WebP Heap-Based Buffer Overflow Vulnerability",
+            "date_added": "2023-09-13",
+            "required_action": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable.",
+            "due_date": "2023-10-04",
+            "known_ransomware_use": "Unknown",
+            "notes": "https://chromereleases.googleblog.com/2023/09/stable-channel-update-for-desktop_11.html?m=1; https://nvd.nist.gov/vuln/detail/CVE-2023-4863",
+            "fetched_at": "2026-11-24T04:55:09.224724+00:00",
+            "source_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "is_simulated": false
+          },
+          "is_simulated": false
+        },
+        "risk_score": {
+          "total_score": 93.39,
+          "priority_level": "CRITICAL",
+          "is_provisional": false,
+          "provisional_reasons": [],
+          "components": [
+            {
+              "name": "CVSS Severity",
+              "raw_value": 8.8,
+              "normalized_score": 88.0,
+              "weight": 0.3,
+              "weighted_contribution": 26.4,
+              "description": "CVSS base score 8.8/10.0 normalized to 88.0/100"
+            },
+            {
+              "name": "EPSS Exploitation Probability",
+              "raw_value": "0.9998",
+              "normalized_score": 99.98,
+              "weight": 0.3,
+              "weighted_contribution": 29.99,
+              "description": "FIRST EPSS probability 0.9998 (99.98%) normalized to 99.98/100"
+            },
+            {
+              "name": "CISA KEV In-The-Wild Exploitation",
+              "raw_value": true,
+              "normalized_score": 100.0,
+              "weight": 0.2,
+              "weighted_contribution": 20.0,
+              "description": "Confirmed active in-the-wild exploitation listed in CISA KEV catalog (100/100)."
+            },
+            {
+              "name": "Asset Business Criticality",
+              "raw_value": "HIGH",
+              "normalized_score": 70.0,
+              "weight": 0.1,
+              "weighted_contribution": 7.0,
+              "description": "Operational criticality tier 'HIGH' scored at 70.0/100."
+            },
+            {
+              "name": "Network Perimeter Exposure",
+              "raw_value": "PUBLIC_FACING",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Perimeter exposure 'PUBLIC_FACING' scored at 100.0/100."
+            }
+          ],
+          "summary": "Prioritization score: 93.39/100 (CRITICAL). Driven by CVSS contribution (26.4 pts), EPSS exploitation probability (29.99 pts), CISA KEV presence (20.0 pts), asset tier (7.0 pts), and exposure (10.0 pts).",
+          "formula_disclaimer": "Custom portfolio heuristic scoring model (CVSS 30%, EPSS 30%, KEV 20%, Criticality 10%, Exposure 10%). Not an official NIST/CISA risk standard."
+        },
+        "remediation": {
+          "executive_summary": "CVE-2023-4863 is a critical heap buffer overflow in libwebp affecting Google Chrome, rated 8.8 CVSS. Given its inclusion in CISA KEV and extremely high EPSS probability, immediate patching is required to prevent active exploitation.",
+          "technical_impact": "The vulnerability allows a remote attacker to perform an out-of-bounds memory write via a crafted HTML page utilizing the libwebp component. This heap buffer overflow can lead to arbitrary code execution within the context of the browser, resulting in complete system compromise or data exfiltration.",
+          "exploitation_assessment": "With an EPSS probability of 0.9998 and confirmed listing in CISA KEV, this vulnerability is actively exploited in the wild and poses an imminent, high-certainty threat to exposed systems.",
+          "remediation_steps": [
+            "Upgrade Google Chrome to version 116.0.5845.187 or later, or update the libwebp library to version 1.3.2 or newer.",
+            "Ensure all endpoints running affected versions are scanned and patched according to vendor advisories."
+          ],
+          "mitigation_workarounds": [
+            "Restrict user access to untrusted or unverified web content via browser policies or network filtering.",
+            "Implement endpoint detection and response (EDR) solutions configured to detect memory corruption or unusual process behavior in the browser."
+          ],
+          "evidence_citations": [
+            "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2023-4863",
+            "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2023-4863",
+            "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "http://www.openwall.com/lists/oss-security/2023/09/21/4",
+            "http://www.openwall.com/lists/oss-security/2023/09/22/1",
+            "http://www.openwall.com/lists/oss-security/2023/09/22/3",
+            "http://www.openwall.com/lists/oss-security/2023/09/22/4"
+          ],
+          "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+          "is_fallback_deterministic": false
+        },
+        "created_at": "2026-11-24T04:55:09.179086+00:00",
+        "execution_time_ms": 4022.84,
+        "disclaimer": "VulnGuard AI risk score is a custom heuristic prioritization model. Always review critical findings against organizational policy."
+      }
+    },
+    {
+      "cve_id": "CVE-2020-0601",
+      "status_code": 201,
+      "duration_ms": 4663.62,
+      "assessment_id": "vg-8a4a8e1f8d7e",
+      "total_score": 88.02,
+      "priority": "CRITICAL",
+      "is_provisional": false,
+      "cvss_score": 8.1,
+      "cvss_version": "3.1",
+      "epss_prob": 0.89078,
+      "epss_pct": 0.99784,
+      "is_kev": true,
+      "weaknesses": [
+        "CWE-295",
+        "CWE-295"
+      ],
+      "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+      "is_fallback": false,
+      "citations": [
+        "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2020-0601",
+        "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2020-0601",
+        "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "http://packetstormsecurity.com/files/155960/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html",
+        "http://packetstormsecurity.com/files/155961/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html",
+        "https://portal.msrc.microsoft.com/en-US/security-guidance/advisory/CVE-2020-0601",
+        "http://packetstormsecurity.com/files/155960/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html"
+      ],
+      "remediation_steps": [
+        "Step 1: Apply all relevant security updates for Windows via Windows Update or vendor-specific patch management tools.",
+        "Step 2: Ensure all endpoints are running the latest, fully patched version of the affected Windows OS."
+      ],
+      "raw": {
+        "id": "vg-8a4a8e1f8d7e",
+        "cve_id": "CVE-2020-0601",
+        "asset_criticality": "HIGH",
+        "internet_exposure": "PUBLIC_FACING",
+        "system_context": "Windows CryptoAPI CurveBall Spoofing",
+        "intelligence": {
+          "cve_id": "CVE-2020-0601",
+          "nvd": {
+            "cve_id": "CVE-2020-0601",
+            "status": "AVAILABLE",
+            "description": "A spoofing vulnerability exists in the way Windows CryptoAPI (Crypt32.dll) validates Elliptic Curve Cryptography (ECC) certificates.An attacker could exploit the vulnerability by using a spoofed code-signing certificate to sign a malicious executable, making it appear the file was from a trusted, legitimate source, aka 'Windows CryptoAPI Spoofing Vulnerability'.",
+            "cvss_version": "3.1",
+            "cvss_base_score": 8.1,
+            "cvss_severity": "HIGH",
+            "cvss_vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N",
+            "published_date": "2020-01-14T23:15:30.207",
+            "last_modified_date": "2026-06-17T02:46:08.127",
+            "references": [
+              "http://packetstormsecurity.com/files/155960/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html",
+              "http://packetstormsecurity.com/files/155961/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html",
+              "https://portal.msrc.microsoft.com/en-US/security-guidance/advisory/CVE-2020-0601",
+              "http://packetstormsecurity.com/files/155960/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html",
+              "http://packetstormsecurity.com/files/155961/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html",
+              "https://portal.msrc.microsoft.com/en-US/security-guidance/advisory/CVE-2020-0601",
+              "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2020-0601"
+            ],
+            "weaknesses": [
+              "CWE-295",
+              "CWE-295"
+            ],
+            "fetched_at": "2026-11-24T04:55:15.096733+00:00",
+            "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2020-0601",
+            "is_simulated": false
+          },
+          "epss": {
+            "cve_id": "CVE-2020-0601",
+            "status": "AVAILABLE",
+            "epss_probability": 0.89078,
+            "epss_percentile": 0.99784,
+            "model_date": "2026-11-23",
+            "fetched_at": "2026-11-24T04:55:15.008607+00:00",
+            "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2020-0601",
+            "is_simulated": false
+          },
+          "cisa_kev": {
+            "cve_id": "CVE-2020-0601",
+            "status": "AVAILABLE",
+            "is_known_exploited": true,
+            "vulnerability_name": "Microsoft Windows CryptoAPI Spoofing Vulnerability",
+            "date_added": "2021-11-03",
+            "required_action": "Apply updates per vendor instructions.",
+            "due_date": "2022-05-03",
+            "known_ransomware_use": "Unknown",
+            "notes": "Reference CISA's ED 20-02 (https://www.cisa.gov/news-events/directives/ed-20-02-mitigate-windows-vulnerabilities-january-2020-patch-tuesday) for further guidance and requirements. Note: The due date for addressing this vulnerability aligns with the requirements outlined in ED 20-02. https://nvd.nist.gov/vuln/detail/CVE-2020-0601",
+            "fetched_at": "2026-11-24T04:55:14.950449+00:00",
+            "source_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "is_simulated": false
+          },
+          "is_simulated": false
+        },
+        "risk_score": {
+          "total_score": 88.02,
+          "priority_level": "CRITICAL",
+          "is_provisional": false,
+          "provisional_reasons": [],
+          "components": [
+            {
+              "name": "CVSS Severity",
+              "raw_value": 8.1,
+              "normalized_score": 81.0,
+              "weight": 0.3,
+              "weighted_contribution": 24.3,
+              "description": "CVSS base score 8.1/10.0 normalized to 81.0/100"
+            },
+            {
+              "name": "EPSS Exploitation Probability",
+              "raw_value": "0.8908",
+              "normalized_score": 89.08,
+              "weight": 0.3,
+              "weighted_contribution": 26.72,
+              "description": "FIRST EPSS probability 0.8908 (89.08%) normalized to 89.08/100"
+            },
+            {
+              "name": "CISA KEV In-The-Wild Exploitation",
+              "raw_value": true,
+              "normalized_score": 100.0,
+              "weight": 0.2,
+              "weighted_contribution": 20.0,
+              "description": "Confirmed active in-the-wild exploitation listed in CISA KEV catalog (100/100)."
+            },
+            {
+              "name": "Asset Business Criticality",
+              "raw_value": "HIGH",
+              "normalized_score": 70.0,
+              "weight": 0.1,
+              "weighted_contribution": 7.0,
+              "description": "Operational criticality tier 'HIGH' scored at 70.0/100."
+            },
+            {
+              "name": "Network Perimeter Exposure",
+              "raw_value": "PUBLIC_FACING",
+              "normalized_score": 100.0,
+              "weight": 0.1,
+              "weighted_contribution": 10.0,
+              "description": "Perimeter exposure 'PUBLIC_FACING' scored at 100.0/100."
+            }
+          ],
+          "summary": "Prioritization score: 88.02/100 (CRITICAL). Driven by CVSS contribution (24.3 pts), EPSS exploitation probability (26.72 pts), CISA KEV presence (20.0 pts), asset tier (7.0 pts), and exposure (10.0 pts).",
+          "formula_disclaimer": "Custom portfolio heuristic scoring model (CVSS 30%, EPSS 30%, KEV 20%, Criticality 10%, Exposure 10%). Not an official NIST/CISA risk standard."
+        },
+        "remediation": {
+          "executive_summary": "CVE-2020-0601 is a critical Windows CryptoAPI spoofing vulnerability that allows attackers to sign malicious executables with trusted certificates. Given its inclusion in the CISA KEV catalog and high exploitation probability, immediate patching is required to prevent widespread compromise.",
+          "technical_impact": "The vulnerability resides in Crypt32.dll and allows an attacker to bypass ECC certificate validation using a spoofed code-signing certificate. Successful exploitation enables the execution of malicious code disguised as legitimate software, leading to system compromise, privilege escalation, and potential data exfiltration on affected Windows systems.",
+          "exploitation_assessment": "With an EPSS probability of 0.8908 and confirmed listing in the CISA KEV catalog, the risk of active exploitation is extremely high. This vulnerability is not theoretical but is actively being used in the wild, necessitating urgent remediation.",
+          "remediation_steps": [
+            "Step 1: Apply all relevant security updates for Windows via Windows Update or vendor-specific patch management tools.",
+            "Step 2: Ensure all endpoints are running the latest, fully patched version of the affected Windows OS."
+          ],
+          "mitigation_workarounds": [
+            "Implement strict code signing policies and certificate validation checks at the application and endpoint level.",
+            "Deploy endpoint detection and response (EDR) solutions configured to detect anomalous code signing behavior or unsigned/spoofed executables."
+          ],
+          "evidence_citations": [
+            "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2020-0601",
+            "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2020-0601",
+            "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "http://packetstormsecurity.com/files/155960/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html",
+            "http://packetstormsecurity.com/files/155961/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html",
+            "https://portal.msrc.microsoft.com/en-US/security-guidance/advisory/CVE-2020-0601",
+            "http://packetstormsecurity.com/files/155960/CurveBall-Microsoft-Windows-CryptoAPI-Spoofing-Proof-Of-Concept.html"
+          ],
+          "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+          "is_fallback_deterministic": false
+        },
+        "created_at": "2026-11-24T04:55:14.913106+00:00",
+        "execution_time_ms": 3959.71,
+        "disclaimer": "VulnGuard AI risk score is a custom heuristic prioritization model. Always review critical findings against organizational policy."
+      }
+    },
+    {
+      "cve_id": "",
+      "status_code": 422,
+      "duration_ms": 751.77,
+      "error": "{\"error\":\"ValidationError\",\"message\":\"Input validation failed. Please check field formats.\",\"details\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"cve_id\"],\"msg\":\"Value error, Invalid CVE ID format: ''. Must match standard pattern 'CVE-YYYY-NNNN+' (e.g. CVE-2021-44228).\",\"input\":\"\",\"ctx\":{\"error\":{}}}],\"timestamp\":\"2026-11-24T04:55:20.626605+00:00\"}",
+      "edge_label": "EMPTY"
+    },
+    {
+      "cve_id": "   ",
+      "status_code": 422,
+      "duration_ms": 713.79,
+      "error": "{\"error\":\"ValidationError\",\"message\":\"Input validation failed. Please check field formats.\",\"details\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"cve_id\"],\"msg\":\"Value error, Invalid CVE ID format: '   '. Must match standard pattern 'CVE-YYYY-NNNN+' (e.g. CVE-2021-44228).\",\"input\":\"   \",\"ctx\":{\"error\":{}}}],\"timestamp\":\"2026-11-24T04:55:21.347865+00:00\"}",
+      "edge_label": "WHITESPACE"
+    },
+    {
+      "cve_id": "  cve-2021-44228  ",
+      "status_code": 201,
+      "duration_ms": 4941.42,
+      "assessment_id": "vg-16c2be151bd3",
+      "total_score": 87.0,
+      "priority": "CRITICAL",
+      "is_provisional": false,
+      "cvss_score": 10.0,
+      "cvss_version": "3.1",
+      "epss_prob": 0.99999,
+      "epss_pct": 1.0,
+      "is_kev": true,
+      "weaknesses": [
+        "CWE-20",
+        "CWE-400",
+        "CWE-502",
+        "CWE-917"
+      ],
+      "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+      "is_fallback": false,
+      "citations": [
+        "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+        "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2021-44228",
+        "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "http://packetstormsecurity.com/files/165225/Apache-Log4j2-2.14.1-Remote-Code-Execution.html",
+        "http://packetstormsecurity.com/files/165260/VMware-Security-Advisory-2021-0028.html",
+        "http://packetstormsecurity.com/files/165261/Apache-Log4j2-2.14.1-Information-Disclosure.html",
+        "http://packetstormsecurity.com/files/165270/Apache-Log4j2-2.14.1-Remote-Code-Execution.html"
+      ],
+      "remediation_steps": [
+        "Upgrade Log4j2 to version 2.16.0 or later (or 2.12.2/2.12.3/2.3.1 if applicable, though 2.16.0+ is preferred for full removal of functionality).",
+        "If immediate patching is impossible, remove affected assets from agency networks as per CISA guidance."
+      ],
+      "raw": {
+        "id": "vg-16c2be151bd3",
+        "cve_id": "CVE-2021-44228",
+        "asset_criticality": "MEDIUM",
+        "internet_exposure": "INTERNAL",
+        "system_context": "Validation Test",
+        "intelligence": {
+          "cve_id": "CVE-2021-44228",
+          "nvd": {
+            "cve_id": "CVE-2021-44228",
+            "status": "AVAILABLE",
+            "description": "Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12.3, and 2.3.1) JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled. From log4j 2.15.0, this behavior has been disabled by default. From version 2.16.0 (along with 2.12.2, 2.12.3, and 2.3.1), this functionality has been completely removed. Note that this vulnerability is specific to log4j-core and does not affect log4net, log4cxx, or other Apache Logging Services projects.",
+            "cvss_version": "3.1",
+            "cvss_base_score": 10.0,
+            "cvss_severity": "CRITICAL",
+            "cvss_vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "published_date": "2021-12-10T10:15:09.143",
+            "last_modified_date": "2026-08-11T19:33:44.513",
+            "references": [
+              "http://packetstormsecurity.com/files/165225/Apache-Log4j2-2.14.1-Remote-Code-Execution.html",
+              "http://packetstormsecurity.com/files/165260/VMware-Security-Advisory-2021-0028.html",
+              "http://packetstormsecurity.com/files/165261/Apache-Log4j2-2.14.1-Information-Disclosure.html",
+              "http://packetstormsecurity.com/files/165270/Apache-Log4j2-2.14.1-Remote-Code-Execution.html",
+              "http://packetstormsecurity.com/files/165281/Log4j2-Log4Shell-Regexes.html",
+              "http://packetstormsecurity.com/files/165282/Log4j-Payload-Generator.html",
+              "http://packetstormsecurity.com/files/165306/L4sh-Log4j-Remote-Code-Execution.html",
+              "http://packetstormsecurity.com/files/165307/Log4j-Remote-Code-Execution-Word-Bypassing.html"
+            ],
+            "weaknesses": [
+              "CWE-20",
+              "CWE-400",
+              "CWE-502",
+              "CWE-917"
+            ],
+            "fetched_at": "2026-11-24T04:54:28.512001+00:00",
+            "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+            "is_simulated": false
+          },
+          "epss": {
+            "cve_id": "CVE-2021-44228",
+            "status": "AVAILABLE",
+            "epss_probability": 0.99999,
+            "epss_percentile": 1.0,
+            "model_date": "2026-11-23",
+            "fetched_at": "2026-11-24T04:54:28.344982+00:00",
+            "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2021-44228",
+            "is_simulated": false
+          },
+          "cisa_kev": {
+            "cve_id": "CVE-2021-44228",
+            "status": "AVAILABLE",
+            "is_known_exploited": true,
+            "vulnerability_name": "Apache Log4j2 Remote Code Execution Vulnerability",
+            "date_added": "2021-12-10",
+            "required_action": "For all affected software assets for which updates exist, the only acceptable remediation actions are: 1) Apply updates; OR 2) remove affected assets from agency networks. Temporary mitigations using one of the measures provided at https://www.cisa.gov/uscert/ed-22-02-apache-log4j-recommended-mitigation-measures are only acceptable until updates are available.",
+            "due_date": "2021-12-24",
+            "known_ransomware_use": "Known",
+            "notes": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+            "fetched_at": "2026-11-24T04:55:22.056702+00:00",
+            "source_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "is_simulated": false
+          },
+          "is_simulated": false
+        },
+        "risk_score": {
+          "total_score": 87.0,
+          "priority_level": "CRITICAL",
+          "is_provisional": false,
+          "provisional_reasons": [],
+          "components": [
+            {
+              "name": "CVSS Severity",
+              "raw_value": 10.0,
+              "normalized_score": 100.0,
+              "weight": 0.3,
+              "weighted_contribution": 30.0,
+              "description": "CVSS base score 10.0/10.0 normalized to 100.0/100"
+            },
+            {
+              "name": "EPSS Exploitation Probability",
+              "raw_value": "1.0000",
+              "normalized_score": 100.0,
+              "weight": 0.3,
+              "weighted_contribution": 30.0,
+              "description": "FIRST EPSS probability 1.0000 (100.00%) normalized to 100.0/100"
+            },
+            {
+              "name": "CISA KEV In-The-Wild Exploitation",
+              "raw_value": true,
+              "normalized_score": 100.0,
+              "weight": 0.2,
+              "weighted_contribution": 20.0,
+              "description": "Confirmed active in-the-wild exploitation listed in CISA KEV catalog (100/100)."
+            },
+            {
+              "name": "Asset Business Criticality",
+              "raw_value": "MEDIUM",
+              "normalized_score": 40.0,
+              "weight": 0.1,
+              "weighted_contribution": 4.0,
+              "description": "Operational criticality tier 'MEDIUM' scored at 40.0/100."
+            },
+            {
+              "name": "Network Perimeter Exposure",
+              "raw_value": "INTERNAL",
+              "normalized_score": 30.0,
+              "weight": 0.1,
+              "weighted_contribution": 3.0,
+              "description": "Perimeter exposure 'INTERNAL' scored at 30.0/100."
+            }
+          ],
+          "summary": "Prioritization score: 87.0/100 (CRITICAL). Driven by CVSS contribution (30.0 pts), EPSS exploitation probability (30.0 pts), CISA KEV presence (20.0 pts), asset tier (4.0 pts), and exposure (3.0 pts).",
+          "formula_disclaimer": "Custom portfolio heuristic scoring model (CVSS 30%, EPSS 30%, KEV 20%, Criticality 10%, Exposure 10%). Not an official NIST/CISA risk standard."
+        },
+        "remediation": {
+          "executive_summary": "CVE-2021-44228 (Log4Shell) is a critical, actively exploited vulnerability (CVSS 10.0) allowing unauthenticated Remote Code Execution via log messages. Immediate patching or network isolation is mandatory due to its high risk and inclusion in CISA KEV.",
+          "technical_impact": "The vulnerability exists in Apache Log4j2 versions 2.0-beta9 through 2.15.0, exploiting JNDI features. An attacker can inject malicious strings into log messages, leading to arbitrary code execution by forcing the application to load payloads from external LDAP servers. This can result in complete system compromise, data exfiltration, and service disruption.",
+          "exploitation_assessment": "With an EPSS probability of 1.0000 and confirmed listing in the CISA KEV catalog, this vulnerability is not theoretical; it is actively exploited in the wild with near certainty of being targeted.",
+          "remediation_steps": [
+            "Upgrade Log4j2 to version 2.16.0 or later (or 2.12.2/2.12.3/2.3.1 if applicable, though 2.16.0+ is preferred for full removal of functionality).",
+            "If immediate patching is impossible, remove affected assets from agency networks as per CISA guidance."
+          ],
+          "mitigation_workarounds": [
+            "Disable message lookup substitution in Log4j configuration until patched.",
+            "Implement network egress filtering to block outbound connections from application servers to external LDAP/RMI endpoints."
+          ],
+          "evidence_citations": [
+            "NIST NVD: https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+            "FIRST.org EPSS: https://api.first.org/data/v1/epss?cve=CVE-2021-44228",
+            "CISA KEV Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "http://packetstormsecurity.com/files/165225/Apache-Log4j2-2.14.1-Remote-Code-Execution.html",
+            "http://packetstormsecurity.com/files/165260/VMware-Security-Advisory-2021-0028.html",
+            "http://packetstormsecurity.com/files/165261/Apache-Log4j2-2.14.1-Information-Disclosure.html",
+            "http://packetstormsecurity.com/files/165270/Apache-Log4j2-2.14.1-Remote-Code-Execution.html"
+          ],
+          "model_used": "nvidia/nemotron-3.5-bolt-e4b",
+          "is_fallback_deterministic": false
+        },
+        "created_at": "2026-11-24T04:55:22.055077+00:00",
+        "execution_time_ms": 4223.83,
+        "disclaimer": "VulnGuard AI risk score is a custom heuristic prioritization model. Always review critical findings against organizational policy."
+      },
+      "edge_label": "LOWERCASE"
+    },
+    {
+      "cve_id": "CVE-24-6387",
+      "status_code": 422,
+      "duration_ms": 768.66,
+      "error": "{\"error\":\"ValidationError\",\"message\":\"Input validation failed. Please check field formats.\",\"details\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"cve_id\"],\"msg\":\"Value error, Invalid CVE ID format: 'CVE-24-6387'. Must match standard pattern 'CVE-YYYY-NNNN+' (e.g. CVE-2021-44228).\",\"input\":\"CVE-24-6387\",\"ctx\":{\"error\":{}}}],\"timestamp\":\"2026-11-24T04:55:27.055714+00:00\"}",
+      "edge_label": "MALFORMED_YEAR"
+    },
+    {
+      "cve_id": "NOT-A-CVE",
+      "status_code": 422,
+      "duration_ms": 694.93,
+      "error": "{\"error\":\"ValidationError\",\"message\":\"Input validation failed. Please check field formats.\",\"details\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"cve_id\"],\"msg\":\"Value error, Invalid CVE ID format: 'NOT-A-CVE'. Must match standard pattern 'CVE-YYYY-NNNN+' (e.g. CVE-2021-44228).\",\"input\":\"NOT-A-CVE\",\"ctx\":{\"error\":{}}}],\"timestamp\":\"2026-11-24T04:55:27.758124+00:00\"}",
+      "edge_label": "INVALID_PREFIX"
+    },
+    {
+      "cve_id": "CVE-2024-11111111111111111111",
+      "status_code": 404,
+      "duration_ms": 862.82,
+      "error": "{\"detail\":\"No published intelligence found for CVE-2024-11111111111111111111.\"}",
+      "edge_label": "LONG_SUFFIX"
+    },
+    {
+      "cve_id": "CVE-2099-99999",
+      "status_code": 404,
+      "duration_ms": 834.09,
+      "error": "{\"detail\":\"No published intelligence found for CVE-2099-99999.\"}",
+      "edge_label": "UNPUBLISHED"
+    }
+  ],
+  "scoring_tests": [
+    {
+      "name": "max_score",
+      "score": 100.0,
+      "priority": "CRITICAL",
+      "sum_match": true
+    },
+    {
+      "name": "min_score",
+      "score": 4.0,
+      "priority": "LOW",
+      "sum_match": true
+    },
+    {
+      "name": "boundaries",
+      "status": "passed",
+      "boundaries_verified": [
+        40.0,
+        70.0,
+        85.0
+      ]
+    },
+    {
+      "name": "missing_data_provisional",
+      "score": 31.0,
+      "is_provisional": true,
+      "reasons_count": 3
+    },
+    {
+      "name": "determinism_50_runs",
+      "identical": true,
+      "score": 97.0
+    }
+  ],
+  "ai_workflow_tests": [
+    {
+      "name": "deterministic_fallback",
+      "model_used": "deterministic-fallback-rules",
+      "is_fallback": true,
+      "status": "passed"
+    },
+    {
+      "name": "prompt_injection_deterministic_engine",
+      "injected": false,
+      "status": "passed"
+    },
+    {
+      "name": "prompt_construction_accuracy",
+      "epss_in_prompt": "0.9090",
+      "kev_in_prompt": "NO (not listed in KEV)",
+      "status": "passed"
+    }
+  ],
+  "security_checks": [
+    {
+      "check": "unauthenticated_api_analyze",
+      "status_code": 422,
+      "vulnerability": "Missing Authentication on Paid AI / DynamoDB Endpoint",
+      "severity": "HIGH",
+      "details": "The /api/analyze endpoint accepts anonymous requests without authentication, allowing potential API quota depletion or denial of wallet."
+    },
+    {
+      "check": "cors_options_preflight",
+      "status_code": 200,
+      "allow_origin": "https://vulnguard.buildwithaveeck.com",
+      "allow_methods": "GET,OPTIONS,POST",
+      "allow_headers": "authorization,content-type,x-requested-with"
+    },
+    {
+      "check": "public_history_access",
+      "status_code": 200,
+      "vulnerability": "Anonymous Public Assessment Audit Log Enumeration",
+      "severity": "MEDIUM",
+      "details": "Assessment history and internal system_context values are publicly accessible to any unauthenticated visitor."
+    }
+  ],
+  "performance_samples": {
+    "health_latency_ms": 794.01,
+    "intel_status_latency_ms": 752.51,
+    "history_latency_ms": 823.28
+  },
+  "recorded_qa_ids": [
+    "vg-63509bab32ab",
+    "vg-381b2473cba9",
+    "vg-4b54b48cea7f",
+    "vg-7664f9d8b430",
+    "vg-a8e61ae340a4",
+    "vg-8a4a8e1f8d7e",
+    "vg-16c2be151bd3"
+  ]
+}

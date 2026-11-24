@@ -135,3 +135,96 @@ def test_empty_request_body_returns_422(client: TestClient):
     """POST /api/analyze with empty JSON body must return 422."""
     res = client.post("/api/analyze", json={})
     assert res.status_code == 422
+
+
+def test_analyze_endpoint_authentication_matrix(client: TestClient, monkeypatch):
+    """
+    Tests complete auth matrix for /api/analyze:
+    - Missing credentials -> HTTP 401
+    - Invalid credentials -> HTTP 401
+    - Valid X-API-Key -> HTTP 201
+    - Valid Bearer token -> HTTP 201
+    - Missing server key when auth required -> HTTP 500 (Fail closed!)
+    """
+    from backend.core.config import settings
+
+    payload = {
+        "cve_id": "CVE-2021-44228",
+        "asset_criticality": "HIGH",
+        "internet_exposure": "PUBLIC_FACING",
+        "simulate_offline": True
+    }
+
+    # 1. Auth required, valid server key configured
+    monkeypatch.setattr(settings, "REQUIRE_AUTH", True)
+    monkeypatch.setattr(settings, "API_KEY", "test-secret-key-12345")
+
+    # 1a. Missing credentials -> 401
+    res_missing = client.post("/api/analyze", json=payload)
+    assert res_missing.status_code == 401
+    assert "Authentication required" in res_missing.json()["detail"]
+
+    # 1b. Wrong X-API-Key -> 401
+    res_wrong_key = client.post("/api/analyze", json=payload, headers={"X-API-Key": "wrong-key"})
+    assert res_wrong_key.status_code == 401
+    assert "Invalid API key" in res_wrong_key.json()["detail"]
+
+    # 1c. Wrong Bearer token -> 401
+    res_wrong_bearer = client.post("/api/analyze", json=payload, headers={"Authorization": "Bearer bad-token"})
+    assert res_wrong_bearer.status_code == 401
+
+    # 1d. Valid X-API-Key -> 201
+    res_valid_key = client.post("/api/analyze", json=payload, headers={"X-API-Key": "test-secret-key-12345"})
+    assert res_valid_key.status_code == 201
+
+    # 1e. Valid Bearer token -> 201
+    res_valid_bearer = client.post("/api/analyze", json=payload, headers={"Authorization": "Bearer test-secret-key-12345"})
+    assert res_valid_bearer.status_code == 201
+
+    # 2. Fail closed: Production/Auth required but server API key is missing
+    monkeypatch.setattr(settings, "REQUIRE_AUTH", True)
+    monkeypatch.setattr(settings, "API_KEY", "")
+    from backend.core.config import Settings
+    monkeypatch.setattr(Settings, "get_api_key", lambda self: "")
+
+    # Must reject even if client provides a token (no accepting arbitrary tokens!)
+    res_fail_closed_with_token = client.post("/api/analyze", json=payload, headers={"X-API-Key": "random-token"})
+    assert res_fail_closed_with_token.status_code == 500
+    assert "missing server credential" in res_fail_closed_with_token.json()["detail"]
+
+    # Must reject anonymous callers (no failing open!)
+    res_fail_closed_anon = client.post("/api/analyze", json=payload)
+    assert res_fail_closed_anon.status_code == 500
+
+
+def test_lambda_authorizer_handler():
+    """Unit test for backend/api/authorizer.py Simple Authorizer format."""
+    import os
+    from backend.api.authorizer import handler
+    import backend.api.authorizer as auth_mod
+
+    auth_mod._CACHED_KEY = None
+    os.environ["API_KEY"] = "auth-secret-key-999"
+
+    # Missing credentials
+    res_missing = handler({"headers": {}}, None)
+    assert res_missing["isAuthorized"] is False
+
+    # Invalid token
+    res_invalid = handler({"headers": {"x-api-key": "bad-key"}}, None)
+    assert res_invalid["isAuthorized"] is False
+
+    # Valid X-API-Key
+    res_valid_x_key = handler({"headers": {"x-api-key": "auth-secret-key-999"}}, None)
+    assert res_valid_x_key["isAuthorized"] is True
+
+    # Valid Bearer
+    res_valid_bearer = handler({"headers": {"authorization": "Bearer auth-secret-key-999"}}, None)
+    assert res_valid_bearer["isAuthorized"] is True
+
+    # Missing server key -> Fail closed
+    os.environ["API_KEY"] = ""
+    auth_mod._CACHED_KEY = None
+    res_no_key = handler({"headers": {"x-api-key": "any-key"}}, None)
+    assert res_no_key["isAuthorized"] is False
+

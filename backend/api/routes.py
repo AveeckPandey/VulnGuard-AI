@@ -5,17 +5,20 @@ Implements endpoints for vulnerability triage, assessment lookup, and history re
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from backend.core.logging import logger
-from backend.core.exceptions import AssessmentNotFoundError, InvalidCVEFormatError
+from backend.core.exceptions import IntelligenceNotFoundError, ThreatIntelFetchError
 from backend.schemas.assessment import (
     AssessmentRequest,
     AssessmentResponse,
     AssessmentSummary,
 )
 from backend.agents.graph import execute_assessment
-from backend.api.deps import get_db_repo
+from backend.api.deps import get_db_repo, verify_analysis_access
 from database.interface import AssessmentRepository
 from backend.services.cache import nvd_cache, epss_cache, cisa_cache
-from backend.services.cisa_service import CATALOG_CACHE_KEY
+from backend.services.cisa_service import CATALOG_CACHE_KEY, cisa_service
+from backend.services.nvd_service import nvd_service
+from backend.services.epss_service import epss_service
+from backend.core.config import settings
 
 router = APIRouter(prefix="/api", tags=["Vulnerability Assessment"])
 
@@ -29,7 +32,8 @@ router = APIRouter(prefix="/api", tags=["Vulnerability Assessment"])
 )
 async def analyze_vulnerability(
     request: AssessmentRequest,
-    repo: AssessmentRepository = Depends(get_db_repo)
+    repo: AssessmentRepository = Depends(get_db_repo),
+    auth: Dict[str, Any] = Depends(verify_analysis_access),
 ) -> AssessmentResponse:
     try:
         # 1. Execute 3-Node LangGraph Pipeline
@@ -39,6 +43,10 @@ async def analyze_vulnerability(
         repo.save(assessment)
 
         return assessment
+    except IntelligenceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=exc.message) from exc
+    except ThreatIntelFetchError as exc:
+        raise HTTPException(status_code=503, detail=exc.message) from exc
     except ValueError as val_err:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(val_err))
     except Exception as exc:
@@ -57,7 +65,8 @@ async def analyze_vulnerability(
 )
 async def get_assessment(
     assessment_id: str,
-    repo: AssessmentRepository = Depends(get_db_repo)
+    repo: AssessmentRepository = Depends(get_db_repo),
+    auth: Dict[str, Any] = Depends(verify_analysis_access),
 ) -> AssessmentResponse:
     assessment = repo.get_by_id(assessment_id)
     if not assessment:
@@ -76,7 +85,8 @@ async def get_assessment(
 )
 async def list_assessments(
     limit: int = Query(default=20, ge=1, le=100, description="Max number of items to return"),
-    repo: AssessmentRepository = Depends(get_db_repo)
+    repo: AssessmentRepository = Depends(get_db_repo),
+    auth: Dict[str, Any] = Depends(verify_analysis_access),
 ) -> List[AssessmentSummary]:
     return repo.list_recent(limit=limit)
 
@@ -90,24 +100,48 @@ async def get_intel_status() -> Dict[str, Any]:
     cisa_catalog = cisa_cache.get(CATALOG_CACHE_KEY)
     cisa_count = len(cisa_catalog) if cisa_catalog else 0
 
+    nvd_status = nvd_service.last_status
+    epss_status = epss_service.last_status
+    cisa_status = cisa_service.last_status if cisa_count > 0 else (
+        "uninitialized" if cisa_service.last_status == "operational" else cisa_service.last_status
+    )
+
+    # Compute overall status dynamically based on real feed health
+    statuses = [nvd_status, epss_status, cisa_status]
+    if any(s in ("dns_resolution_failed", "unreachable", "degraded", "rate_limited") for s in statuses):
+        overall_status = "degraded"
+    else:
+        overall_status = "operational"
+
     return {
-        "status": "operational",
+        "status": overall_status,
         "feeds": {
             "nist_nvd": {
                 "name": "NIST National Vulnerability Database API 2.0",
+                "status": nvd_status,
+                "authenticated": bool(settings.get_nvd_api_key()),
+                "rate_limit_tier": f"{settings.nvd_rate_limit_calls} req / {int(settings.nvd_rate_limit_period)}s",
+                "last_error": nvd_service.last_error,
+                "last_check": nvd_service.last_check_time,
                 "cached_items": nvd_cache.size(),
-                "ttl_hours": 12,
+                "ttl_hours": settings.NVD_CACHE_TTL_HOURS,
             },
             "first_epss": {
                 "name": "FIRST.org Exploit Prediction Scoring System",
+                "status": epss_status,
+                "last_error": epss_service.last_error,
+                "last_check": epss_service.last_check_time,
                 "cached_items": epss_cache.size(),
-                "ttl_hours": 24,
+                "ttl_hours": settings.EPSS_CACHE_TTL_HOURS,
             },
             "cisa_kev": {
                 "name": "CISA Known Exploited Vulnerabilities Catalog",
+                "status": cisa_status,
                 "catalog_loaded": cisa_count > 0,
                 "known_exploited_cves_count": cisa_count,
-                "ttl_hours": 6,
+                "last_error": cisa_service.last_error,
+                "last_check": cisa_service.last_check_time,
+                "ttl_hours": settings.CISA_CACHE_TTL_HOURS,
             }
         }
     }

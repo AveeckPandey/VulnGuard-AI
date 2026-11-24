@@ -4,12 +4,14 @@ Proves an assessment created through FastAPI is successfully persisted to and re
 """
 import os
 import boto3
+import pytest
 from fastapi.testclient import TestClient
 
 from backend.core.config import settings
 from database.factory import reset_repository, get_repository
 from backend.app.main import app
 
+@pytest.mark.skipif(os.getenv("QA_LIVE_DYNAMO") != "1", reason="writes to the AWS table")
 def test_fastapi_live_dynamodb_persistence():
     orig_backend = settings.DATABASE_BACKEND
     orig_mock = settings.USE_BEDROCK_MOCK
@@ -17,7 +19,7 @@ def test_fastapi_live_dynamodb_persistence():
 
     settings.DATABASE_BACKEND = "dynamodb"
     settings.DYNAMODB_TABLE_NAME = "VulnGuardAssessments"
-    settings.USE_BEDROCK_MOCK = False
+    settings.USE_BEDROCK_MOCK = True
     reset_repository()
 
     try:

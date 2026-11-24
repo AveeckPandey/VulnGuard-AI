@@ -91,9 +91,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         <div className="p-4 rounded-2xl bg-card border border-border shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Evaluated</p>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Recent Evaluated</p>
             <p className="text-2xl font-extrabold text-white mt-1 font-mono">{total}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Loaded database records</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Showing recent (limit 50)</p>
           </div>
           <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
             <Layers className="w-5 h-5" />
@@ -379,7 +379,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                           YES (Active)
                         </span>
                       ) : (
-                        <span className="text-slate-500 text-[11px]">No</span>
+                        <span className="text-slate-500 text-[11px]">{item.is_known_exploited === false ? 'No' : 'Unknown'}</span>
                       )}
                     </td>
                     <td className="py-3 px-3 text-slate-400 font-sans text-[11px]">

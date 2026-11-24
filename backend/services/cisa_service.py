@@ -14,7 +14,7 @@ from backend.core.config import settings
 from backend.core.logging import logger
 from backend.schemas.intelligence import CisaKevIntel, IntelSourceStatus
 from backend.services.cache import cisa_cache
-from backend.tests.fixtures.simulated_intel import SIMULATED_CVE_FIXTURES
+from backend.services.simulated_intel import SIMULATED_CVE_FIXTURES
 
 CATALOG_CACHE_KEY = "__cisa_catalog_dict__"
 CATALOG_METADATA_KEY = "__cisa_catalog_meta__"
@@ -25,6 +25,9 @@ class CisaKevService:
 
     def __init__(self):
         self._refresh_lock = asyncio.Lock()
+        self.last_status: str = "operational"
+        self.last_error: Optional[str] = None
+        self.last_check_time: Optional[str] = None
 
     async def get_cisa_kev(self, cve_id: str, simulate_offline: bool = False) -> CisaKevIntel:
         cve_id = cve_id.strip().upper()
@@ -79,7 +82,7 @@ class CisaKevService:
                 required_action=None,
                 due_date=None,
                 known_ransomware_use=None,
-                notes="Verified against latest CISA KEV catalog; no documented active exploitation reported.",
+                notes="This CVE was absent from the retrieved CISA KEV catalog.",
                 fetched_at=datetime.now(timezone.utc).isoformat(),
                 source_url="https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
                 is_simulated=False,
@@ -97,12 +100,15 @@ class CisaKevService:
 
             if response.status_code == 200:
                 data = response.json()
-                vulnerabilities = data.get("vulnerabilities", [])
+                vulnerabilities = data["vulnerabilities"]
                 catalog_dict: Dict[str, Dict[str, Any]] = {}
                 for v in vulnerabilities:
                     cid = v.get("cveID", "").strip().upper()
                     if cid:
                         catalog_dict[cid] = v
+                if not catalog_dict or data.get("count", len(vulnerabilities)) != len(catalog_dict):
+                    logger.warning("[CISA KEV] Empty or incomplete catalog. Membership is unknown.")
+                    return None
 
                 # Cache dictionary for 6 hours
                 ttl = settings.CISA_CACHE_TTL_HOURS * 3600.0
@@ -113,13 +119,22 @@ class CisaKevService:
                     "date_released": data.get("dateReleased"),
                 }, ttl_seconds=ttl)
 
+                self.last_status = "operational"
+                self.last_error = None
+                self.last_check_time = datetime.now(timezone.utc).isoformat()
                 logger.info(f"[CISA KEV] Successfully ingested {len(catalog_dict)} KEV catalog entries (cached for {settings.CISA_CACHE_TTL_HOURS}h)")
                 return catalog_dict
             else:
+                self.last_status = "degraded"
+                self.last_error = f"Upstream HTTP error {response.status_code}"
+                self.last_check_time = datetime.now(timezone.utc).isoformat()
                 logger.error(f"[CISA KEV] Upstream HTTP error {response.status_code}")
                 return None
 
         except Exception as exc:
+            self.last_status = "unreachable"
+            self.last_error = str(exc)[:120]
+            self.last_check_time = datetime.now(timezone.utc).isoformat()
             logger.warning(f"[CISA KEV] Failed to download KEV catalog: {exc}")
             return None
 

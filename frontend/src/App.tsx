@@ -12,7 +12,7 @@ import { AiRemediationPanel } from './components/dashboard/AiRemediationPanel';
 import { EvidenceCitations } from './components/dashboard/EvidenceCitations';
 import { AssessmentHistoryTable } from './components/history/AssessmentHistoryTable';
 import { AssessmentDetailModal } from './components/details/AssessmentDetailModal';
-import { apiClient, ApiError } from './api/client';
+import { apiClient, ApiError, getResolvedApiEndpointDisplay } from './api/client';
 import {
   AssessmentResponse,
   AssessmentSummary,
@@ -49,7 +49,6 @@ export function App() {
   useEffect(() => {
     fetchSystemStatus();
     loadHistory();
-    performInitialAnalysis();
   }, []);
 
   const fetchSystemStatus = async () => {
@@ -68,31 +67,21 @@ export function App() {
     try {
       const data = await apiClient.listAssessments(50);
       setHistory(data);
-    } catch (err) {
-      console.warn('Could not load history:', err);
+    } catch (err: any) {
+      if (err instanceof ApiError && err.status === 401) {
+        console.info('Authentication required to load assessment history.');
+      } else {
+        console.warn('Could not load history:', err);
+      }
     } finally {
       setIsRefreshing(false);
-    }
-  };
-
-  const performInitialAnalysis = async () => {
-    try {
-      const result = await apiClient.analyzeVulnerability({
-        cve_id: 'CVE-2021-44228',
-        asset_criticality: 'CRITICAL',
-        internet_exposure: 'PUBLIC_FACING',
-        system_context: 'Public Edge Payment Ingress API Gateway',
-        simulate_offline: false,
-      });
-      setCurrentAssessment(result);
-    } catch (e) {
-      console.warn('Initial preset analysis notice:', e);
     }
   };
 
   const handleAnalyze = async (request: AssessmentRequest) => {
     setIsLoading(true);
     setErrorMessage(null);
+    setCurrentAssessment(null);
     try {
       const result = await apiClient.analyzeVulnerability(request);
       setCurrentAssessment(result);
@@ -100,7 +89,13 @@ export function App() {
       loadHistory();
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        if (error.status === 401) {
+          setErrorMessage(
+            'Authentication Required (HTTP 401): An authorized API Access Key is required to execute live vulnerability analysis. Open Settings to configure your API key.'
+          );
+        } else {
+          setErrorMessage(error.message);
+        }
       } else {
         setErrorMessage('Failed to complete vulnerability assessment.');
       }
@@ -177,7 +172,7 @@ export function App() {
           <div className="flex items-center space-x-2">
             <WifiOff className="w-4 h-4 text-red-400 shrink-0" />
             <span>
-              <strong>Backend Disconnected:</strong> Cannot reach FastAPI at http://127.0.0.1:8000. Ensure the backend server is running.
+              <strong>Backend Disconnected:</strong> Cannot reach API backend ({getResolvedApiEndpointDisplay()}). Ensure the backend server is running.
             </span>
           </div>
           <button
@@ -220,17 +215,30 @@ export function App() {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
           {/* Error Banner */}
           {errorMessage && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center justify-between">
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center space-x-2">
                 <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
-              <button
-                onClick={() => setErrorMessage(null)}
-                className="text-red-400 hover:text-white text-xs underline ml-4"
-              >
-                Dismiss
-              </button>
+              <div className="flex items-center space-x-3 shrink-0 ml-auto">
+                {activeTab !== 'settings' && (
+                  <button
+                    onClick={() => {
+                      setActiveTab('settings');
+                      setErrorMessage(null);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-white font-medium text-xs transition-all"
+                  >
+                    Open Settings & Auth
+                  </button>
+                )}
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="text-red-400 hover:text-white text-xs underline"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           )}
 

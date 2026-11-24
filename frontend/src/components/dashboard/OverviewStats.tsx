@@ -15,9 +15,9 @@ export const OverviewStats: React.FC<OverviewStatsProps> = ({ history }) => {
 
   const stats = [
     {
-      title: 'Triaged Assessments',
+      title: 'Recent Assessments',
       value: total,
-      label: 'Recorded in database',
+      label: 'Showing recent (limit 50)',
       icon: Activity,
       color: 'text-sky-400',
       bg: 'bg-sky-500/10 border-sky-500/20',

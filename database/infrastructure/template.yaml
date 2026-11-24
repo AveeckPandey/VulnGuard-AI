@@ -26,6 +26,8 @@ Globals:
         USE_BEDROCK_MOCK: "false"
         NVIDIA_MODEL_ID: nvidia/nemotron-3.5-bolt-e4b
         SSM_NVIDIA_API_KEY_PARAM: /vulnguard/nvidia_api_key
+        SSM_NVD_API_KEY_PARAM: /vulnguard/nvd_api_key
+        SSM_API_KEY_PARAM: /vulnguard/api_key
         CORS_ORIGINS: '["https://vulnguard-ai.buildwithaveeck.com","https://vulnguard.buildwithaveeck.com","http://localhost:5173","http://127.0.0.1:5173"]'
 
 Resources:
@@ -45,11 +47,41 @@ Resources:
           - "Content-Type"
           - "Authorization"
           - "X-Requested-With"
+          - "X-API-Key"
         AllowMethods:
           - GET
           - POST
           - OPTIONS
         MaxAge: 3600
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: 10
+      Auth:
+        Authorizers:
+          ApiKeyAuthorizer:
+            FunctionArn: !GetAtt VulnGuardAuthorizerFunction.Arn
+            FunctionPayloadType: REQUEST
+            EnableSimpleResponses: true
+            AuthorizerPayloadFormatVersion: "2.0"
+
+  # ==========================================
+  # API Gateway Lambda Request Authorizer Function
+  # ==========================================
+  VulnGuardAuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../build-lambda
+      Handler: backend.api.authorizer.handler
+      Timeout: 10
+      MemorySize: 256
+      Policies:
+        - Statement:
+            - Sid: SSMParameterStoreAuthorizerAccess
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/vulnguard/*"
 
   # ==========================================
   # Backend FastAPI Lambda Function (Mangum)
@@ -87,6 +119,33 @@ Resources:
                 - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-lite-v1:0"
                 - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0"
       Events:
+        ApiAnalyze:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VulnGuardHttpApi
+            Path: /api/analyze
+            Method: POST
+            Auth:
+              Authorizer: ApiKeyAuthorizer
+            RouteSettings:
+              ThrottlingBurstLimit: 10
+              ThrottlingRateLimit: 5
+        ApiAssessments:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VulnGuardHttpApi
+            Path: /api/assessments
+            Method: GET
+            Auth:
+              Authorizer: ApiKeyAuthorizer
+        ApiAssessmentDetail:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VulnGuardHttpApi
+            Path: /api/assessments/{assessment_id}
+            Method: GET
+            Auth:
+              Authorizer: ApiKeyAuthorizer
         ApiRoot:
           Type: HttpApi
           Properties:

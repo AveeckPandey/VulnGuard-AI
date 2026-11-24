@@ -2,6 +2,41 @@ import { AssessmentRequest, AssessmentResponse, AssessmentSummary } from '../typ
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
+// User-specific authentication token management (in-memory with optional sessionStorage backing).
+// Security Notice: Server-side API keys MUST NOT be embedded in Vite bundles via VITE_ variables.
+let inMemoryUserToken: string | null = null;
+
+export function setUserAuthToken(token: string | null): void {
+  inMemoryUserToken = token;
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    if (token) {
+      window.sessionStorage.setItem('vulnguard_user_token', token);
+    } else {
+      window.sessionStorage.removeItem('vulnguard_user_token');
+    }
+  }
+}
+
+export function getUserAuthToken(): string | null {
+  if (inMemoryUserToken) {
+    return inMemoryUserToken;
+  }
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    return window.sessionStorage.getItem('vulnguard_user_token');
+  }
+  return null;
+}
+
+export function getResolvedApiEndpointDisplay(): string {
+  if (API_BASE_URL) {
+    return API_BASE_URL;
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/api (Same-Origin Gateway)`;
+  }
+  return '/api (Same-Origin Gateway)';
+}
+
 export class ApiError extends Error {
   status: number;
   details?: any;
@@ -16,9 +51,11 @@ export class ApiError extends Error {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  const headers = {
+  const token = getUserAuthToken();
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers || {}),
+    ...(token ? { 'Authorization': `Bearer ${token}`, 'X-API-Key': token } : {}),
+    ...((options.headers as Record<string, string>) || {}),
   };
 
   try {

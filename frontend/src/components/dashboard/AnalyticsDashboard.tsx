@@ -28,6 +28,7 @@ interface AnalyticsDashboardProps {
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ history }) => {
   const total = history.length;
   const inKev = history.filter((h) => h.is_known_exploited).length;
+  const absentFromKev = history.filter((h) => h.is_known_exploited === false).length;
   const publicFacing = history.filter((h) => h.internet_exposure === 'PUBLIC_FACING').length;
   const internal = total - publicFacing;
 
@@ -38,11 +39,17 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ history 
   ];
 
   // Scatter plot: CVSS Base Score (x) vs Priority Score (y) vs EPSS (size)
-  const scatterData = history.map((h) => ({
+  // Exclude records with missing CVSS so they are never falsely displayed as zero
+  const scoredHistory = history.filter(
+    (h) => h.cvss_base_score !== null && h.cvss_base_score !== undefined
+  );
+  const unindexedCount = history.length - scoredHistory.length;
+
+  const scatterData = scoredHistory.map((h) => ({
     cve: h.cve_id,
-    cvss: h.cvss_base_score || 0,
+    cvss: h.cvss_base_score,
     priority: h.total_score,
-    epss: (h.epss_probability || 0) * 100,
+    epss: (h.epss_probability ?? 0) * 100,
   }));
 
   // Criticality Hierarchy count
@@ -71,8 +78,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ history 
 
         <div className="flex items-center space-x-4 text-xs">
           <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">Dataset</span>
-            <span className="font-mono font-bold text-cyan-400 text-sm">{total} Assessments</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block">Sample Window</span>
+            <span className="font-mono font-bold text-cyan-400 text-sm">{total} Recent (Limit 50)</span>
           </div>
           <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Storage</span>
@@ -92,7 +99,14 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ history 
                 CVSS Base vs Composite Priority Score
               </h3>
             </div>
-            <span className="text-[10px] text-slate-500 font-mono">Correlation Matrix</span>
+            <div className="flex items-center space-x-2">
+              {unindexedCount > 0 && (
+                <span className="text-[10px] text-amber-400 font-mono px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                  {unindexedCount} missing CVSS excluded
+                </span>
+              )}
+              <span className="text-[10px] text-slate-500 font-mono">Correlation Matrix</span>
+            </div>
           </div>
           <div className="h-56 w-full">
             {scatterData.length > 0 ? (
@@ -235,14 +249,14 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ history 
                 <p className="text-[11px] text-red-400/80 mt-1">Confirmed in CISA Catalog</p>
               </div>
               <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">No Active Exploit</span>
-                <p className="text-3xl font-extrabold text-white mt-2 font-mono">{total - inKev}</p>
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Absent from KEV</span>
+                <p className="text-3xl font-extrabold text-white mt-2 font-mono">{absentFromKev}</p>
                 <p className="text-[11px] text-emerald-400/80 mt-1">Not Listed in Catalog</p>
               </div>
             </div>
           </div>
           <p className="text-[10px] text-slate-500 text-center">
-            CISA KEV status adds 20 weighted contribution points to the composite score
+            Unverified KEV status: {total - inKev - absentFromKev}
           </p>
         </div>
       </div>

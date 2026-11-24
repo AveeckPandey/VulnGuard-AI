@@ -5,8 +5,9 @@ Queries NIST NVD, FIRST EPSS, and CISA KEV concurrently and aggregates results.
 """
 import asyncio
 from backend.core.logging import logger
+from backend.core.exceptions import IntelligenceNotFoundError, ThreatIntelFetchError
 from backend.agents.state import VulnGuardState
-from backend.schemas.intelligence import AggregatedIntel
+from backend.schemas.intelligence import AggregatedIntel, IntelSourceStatus
 from backend.services.nvd_service import nvd_service
 from backend.services.epss_service import epss_service
 from backend.services.cisa_service import cisa_service
@@ -33,6 +34,11 @@ async def intelligence_collection_node(state: VulnGuardState) -> VulnGuardState:
 
     if any(isinstance(r, Exception) for r in results):
         logger.warning(f"[LangGraph Node 1] Upstream exception caught in one or more feeds for {cve_id}; returning controlled partial intelligence.")
+
+    if not simulate_offline and all(feed.status != IntelSourceStatus.AVAILABLE for feed in (nvd_res, epss_res, cisa_res)):
+        if nvd_res.status == IntelSourceStatus.CONFIRMED_NEGATIVE:
+            raise IntelligenceNotFoundError(f"No published intelligence found for {cve_id}.")
+        raise ThreatIntelFetchError(f"Unable to verify {cve_id} with the upstream intelligence services. Retry later.")
 
     is_simulated = (
         simulate_offline or

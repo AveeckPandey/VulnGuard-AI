@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { apiClient } from '../../api/client';
+import { apiClient, getResolvedApiEndpointDisplay, getUserAuthToken, setUserAuthToken } from '../../api/client';
 import {
   Settings,
   Server,
@@ -8,6 +8,9 @@ import {
   ShieldCheck,
   CheckCircle2,
   RefreshCw,
+  Key,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 
 interface SettingsPanelProps {
@@ -24,6 +27,33 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   isRefreshing,
 }) => {
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [tokenInput, setTokenInput] = useState<string>('');
+  const [activeToken, setActiveToken] = useState<string | null>(getUserAuthToken());
+  const [tokenFeedback, setTokenFeedback] = useState<string | null>(null);
+
+  const handleSaveToken = () => {
+    if (!tokenInput.trim()) return;
+    setUserAuthToken(tokenInput.trim());
+    setActiveToken(tokenInput.trim());
+    setTokenInput('');
+    setTokenFeedback('Access token saved to secure session storage.');
+  };
+
+  const handleClearToken = () => {
+    setUserAuthToken(null);
+    setActiveToken(null);
+    setTokenFeedback('Access token cleared. Operating in anonymous / guest mode.');
+  };
+
+  const handleTestToken = async () => {
+    setTokenFeedback('Testing token against API...');
+    try {
+      await apiClient.listAssessments(1);
+      setTokenFeedback('Success: API key is valid and authorized.');
+    } catch (err: any) {
+      setTokenFeedback(`Authentication Check: ${err.message}`);
+    }
+  };
 
   const feeds = intelFeeds?.feeds || {};
   const nvd = feeds.nist_nvd || {};
@@ -69,6 +99,90 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Card 0: API Access Key & Client Authorization */}
+        <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4 lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                <Key className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">API Client Access Key & Authorization</h3>
+                <p className="text-[11px] text-slate-400">Manage credentials for protected analysis endpoints and private assessment history.</p>
+              </div>
+            </div>
+            {activeToken ? (
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-mono font-bold flex items-center space-x-1">
+                <Lock className="w-3 h-3" />
+                <span>AUTHENTICATED</span>
+              </span>
+            ) : (
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs font-mono font-bold flex items-center space-x-1">
+                <Unlock className="w-3 h-3" />
+                <span>ANONYMOUS / GUEST</span>
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-3 text-xs">
+            {activeToken ? (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div>
+                  <p className="text-slate-300 font-medium">Active Session Access Token:</p>
+                  <p className="font-mono text-cyan-400 text-xs mt-0.5">
+                    {activeToken.length > 8 ? `${activeToken.slice(0, 4)}••••••••${activeToken.slice(-4)}` : '••••••••'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1">Stored securely in browser sessionStorage; transmitted via standard Authorization Bearer header.</p>
+                </div>
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                  <button
+                    onClick={handleTestToken}
+                    className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 text-cyan-300 text-xs font-medium transition-all"
+                  >
+                    Test Token
+                  </button>
+                  <button
+                    onClick={handleClearToken}
+                    className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-300 text-xs font-medium transition-all"
+                  >
+                    Clear Token
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <p className="text-slate-300">
+                  VulnGuard live analysis and private assessment records require an authorized API key.
+                  Tokens are stored only in your local browser session and are never exposed in build bundles.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="password"
+                    value={tokenInput}
+                    onChange={(e) => setTokenInput(e.target.value)}
+                    placeholder="Enter API Key (e.g. vg-live-...)"
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                  />
+                  <button
+                    onClick={handleSaveToken}
+                    disabled={!tokenInput.trim()}
+                    className="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold hover:bg-cyan-400 disabled:opacity-50 text-xs transition-all"
+                  >
+                    Authorize Session
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tokenFeedback && (
+              <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-cyan-300 flex items-center space-x-2">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                <span>{tokenFeedback}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Card 1: Backend Microservice Status */}
         <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-border pb-3">
@@ -104,8 +218,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </span>
             </div>
             <div className="flex justify-between py-1.5">
-              <span className="text-slate-400">Local Endpoint:</span>
-              <span className="font-mono text-slate-400 text-[11px]">http://127.0.0.1:8000</span>
+              <span className="text-slate-400">API Endpoint:</span>
+              <span className="font-mono text-slate-400 text-[11px] truncate max-w-[220px]" title={getResolvedApiEndpointDisplay()}>
+                {getResolvedApiEndpointDisplay()}
+              </span>
             </div>
           </div>
 
@@ -227,16 +343,38 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </div>
               <h3 className="text-sm font-bold text-white">Threat Intelligence Ingestion Feeds</h3>
             </div>
-            <span className="text-xs text-slate-400 font-mono">3 Feeds Online</span>
+            <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${
+              intelFeeds?.status === 'operational'
+                ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
+                : 'text-amber-400 bg-amber-500/10 border border-amber-500/20'
+            }`}>
+              {intelFeeds?.status ? intelFeeds.status.toUpperCase() : 'OPERATIONAL'}
+            </span>
           </div>
 
           <div className="space-y-3 text-xs">
             {/* Feed 1: NVD */}
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
               <div>
-                <p className="font-bold text-slate-200">NIST NVD API 2.0</p>
+                <div className="flex items-center space-x-2">
+                  <p className="font-bold text-slate-200">NIST NVD API 2.0</p>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                    nvd.status === 'operational'
+                      ? 'bg-emerald-500/10 text-emerald-400'
+                      : 'bg-amber-500/10 text-amber-400'
+                  }`}>
+                    {nvd.status || 'operational'}
+                  </span>
+                </div>
                 <p className="text-[11px] text-slate-400 mt-0.5">CVSS v4.0 / v3.1 Metrics & CWEs</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">Rate Limit: 50 req/30s (auth) or 5 req/30s</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Tier: {nvd.rate_limit_tier || '50 req/30s (auth)'}
+                </p>
+                {nvd.last_error && (
+                  <p className="text-[10px] text-amber-400/90 mt-1 font-mono">
+                    Note: {nvd.last_error}
+                  </p>
+                )}
               </div>
               <div className="text-right font-mono text-[11px]">
                 <span className="text-cyan-400 font-bold block">{nvd.cached_items || 0} Cached</span>

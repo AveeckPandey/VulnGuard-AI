@@ -1,0 +1,66 @@
+[
+  {
+    "feed": "NVD",
+    "scenario": "HTTP 429",
+    "result_status": "UNKNOWN_OR_MISSING",
+    "last_status": "rate_limited"
+  },
+  {
+    "feed": "NVD",
+    "scenario": "HTTP 500",
+    "result_status": "UNKNOWN_OR_MISSING",
+    "last_status": "degraded"
+  },
+  {
+    "feed": "NVD",
+    "scenario": "Timeout",
+    "result_status": "UNKNOWN_OR_MISSING",
+    "last_status": "unreachable"
+  },
+  {
+    "feed": "NVD",
+    "scenario": "HTTP 200 with HTML/Malformed Body",
+    "crashes_unhandled": true,
+    "vulnerability": "Unhandled JSONDecodeError in NVD service causes 500 Internal Server Error"
+  },
+  {
+    "feed": "EPSS",
+    "scenario": "HTTP 500",
+    "result_status": "UNKNOWN_OR_MISSING"
+  },
+  {
+    "feed": "EPSS",
+    "scenario": "Absent Record in FIRST.org",
+    "result_status": "UNKNOWN_OR_MISSING",
+    "note": "Returns UNKNOWN_OR_MISSING, triggering provisional baseline scoring (3.0 pts)."
+  },
+  {
+    "feed": "EPSS",
+    "scenario": "HTTP 200 with HTML/Malformed Body",
+    "crashes_unhandled": true,
+    "vulnerability": "Unhandled JSONDecodeError in EPSS service causes 500 Internal Server Error"
+  },
+  {
+    "feed": "CISA KEV",
+    "scenario": "Catalog 500",
+    "result_status": "UNKNOWN_OR_MISSING"
+  },
+  {
+    "feed": "CISA KEV",
+    "scenario": "Malformed Catalog Schema",
+    "result_status": "UNKNOWN_OR_MISSING"
+  },
+  {
+    "component": "AI Inference",
+    "scenario": "NVIDIA 500 + Bedrock Unreachable",
+    "recovered": true,
+    "model_used": "deterministic-fallback-rules",
+    "is_fallback": true
+  },
+  {
+    "component": "DynamoDB",
+    "scenario": "AccessDeniedException",
+    "handled_as_database_error": true,
+    "error_msg": "DynamoDB operation failed: An error occurred (AccessDeniedException) when calling the PutItem operation: User not authorized"
+  }
+]

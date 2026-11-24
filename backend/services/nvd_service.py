@@ -4,6 +4,7 @@ Fetches vulnerability metadata, CVSS v3.1 metrics, CWEs, and references from NIS
 Supports keyless and authenticated rate limits, exponential backoff, and 12-hour caching.
 """
 import asyncio
+import json
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 import httpx
@@ -14,7 +15,7 @@ from backend.core.exceptions import ThreatIntelFetchError, RateLimitExceededErro
 from backend.schemas.intelligence import NvdIntel, IntelSourceStatus
 from backend.services.cache import nvd_cache
 from backend.services.rate_limiter import SlidingWindowRateLimiter, calculate_backoff_with_jitter
-from backend.tests.fixtures.simulated_intel import SIMULATED_CVE_FIXTURES
+from backend.services.simulated_intel import SIMULATED_CVE_FIXTURES
 
 
 class NvdService:
@@ -25,6 +26,9 @@ class NvdService:
             max_calls=settings.nvd_rate_limit_calls,
             period_seconds=settings.nvd_rate_limit_period
         )
+        self.last_status: str = "operational"
+        self.last_error: Optional[str] = None
+        self.last_check_time: Optional[str] = None
 
     async def fetch_cve(self, cve_id: str, simulate_offline: bool = False) -> NvdIntel:
         cve_id = cve_id.strip().upper()
@@ -46,8 +50,9 @@ class NvdService:
         headers = {
             "User-Agent": "VulnGuard-AI-Cybersecurity-Platform/1.0"
         }
-        if settings.NVD_API_KEY.strip():
-            headers["apiKey"] = settings.NVD_API_KEY.strip()
+        nvd_key = settings.get_nvd_api_key().strip()
+        if nvd_key:
+            headers["apiKey"] = nvd_key
 
         params = {"cveId": cve_id}
         max_retries = 3
@@ -65,26 +70,59 @@ class NvdService:
                     )
 
                 if response.status_code == 200:
-                    intel = self._parse_nvd_response(cve_id, response.json())
-                    nvd_cache.set(cve_id, intel, ttl_seconds=settings.NVD_CACHE_TTL_HOURS * 3600.0)
+                    try:
+                        raw_data = response.json()
+                    except (json.JSONDecodeError, ValueError) as json_err:
+                        self.last_status = "degraded"
+                        self.last_error = f"Malformed upstream JSON: {str(json_err)[:100]}"
+                        self.last_check_time = datetime.now(timezone.utc).isoformat()
+                        logger.warning(f"[NVD] Malformed non-JSON response on attempt {attempt + 1}: {json_err}")
+                        if attempt < max_retries - 1:
+                            backoff = calculate_backoff_with_jitter(attempt, base_delay=1.5, max_delay=6.0)
+                            await asyncio.sleep(backoff)
+                            continue
+                        return self._build_unavailable(cve_id)
+
+                    intel = self._parse_nvd_response(cve_id, raw_data)
+                    if intel.status == IntelSourceStatus.AVAILABLE:
+                        nvd_cache.set(cve_id, intel, ttl_seconds=settings.NVD_CACHE_TTL_HOURS * 3600.0)
+                    self.last_status = "operational"
+                    self.last_error = None
+                    self.last_check_time = datetime.now(timezone.utc).isoformat()
                     return intel
 
                 if response.status_code == 429:
+                    self.last_status = "rate_limited"
+                    self.last_error = "NIST NVD rate limit exceeded (HTTP 429)"
+                    self.last_check_time = datetime.now(timezone.utc).isoformat()
                     backoff = calculate_backoff_with_jitter(attempt, base_delay=2.0, max_delay=10.0)
                     logger.warning(f"[NVD] Rate limited (429). Retrying in {backoff:.2f}s...")
                     await asyncio.sleep(backoff)
                     continue
 
                 if response.status_code == 404:
+                    self.last_status = "operational"
                     logger.warning(f"[NVD] {cve_id} not found in NVD database.")
                     return self._build_not_found(cve_id)
 
+                self.last_status = "degraded"
+                self.last_error = f"Upstream error HTTP {response.status_code}"
+                self.last_check_time = datetime.now(timezone.utc).isoformat()
                 logger.error(f"[NVD] Upstream error {response.status_code}: {response.text[:200]}")
                 if attempt == max_retries - 1:
                     break
 
             except httpx.RequestError as exc:
+                err_msg = str(exc)
                 logger.warning(f"[NVD] Network error on {cve_id}: {exc}")
+                if "getaddrinfo" in err_msg or "ConnectError" in type(exc).__name__:
+                    self.last_status = "dns_resolution_failed"
+                    self.last_error = f"DNS resolution failed for services.nvd.nist.gov: {err_msg[:120]}"
+                else:
+                    self.last_status = "unreachable"
+                    self.last_error = err_msg[:120]
+                self.last_check_time = datetime.now(timezone.utc).isoformat()
+
                 if attempt < max_retries - 1:
                     backoff = calculate_backoff_with_jitter(attempt, base_delay=1.5, max_delay=6.0)
                     await asyncio.sleep(backoff)
@@ -95,11 +133,13 @@ class NvdService:
         return self._build_unavailable(cve_id)
 
     def _parse_nvd_response(self, cve_id: str, data: Dict[str, Any]) -> NvdIntel:
-        vulnerabilities = data.get("vulnerabilities", [])
+        vulnerabilities = data["vulnerabilities"]
         if not vulnerabilities:
             return self._build_not_found(cve_id)
 
-        cve_item = vulnerabilities[0].get("cve", {})
+        cve_item = next((entry["cve"] for entry in vulnerabilities if entry["cve"]["id"] == cve_id), None)
+        if cve_item is None:
+            return self._build_unavailable(cve_id)
         descriptions = cve_item.get("descriptions", [])
         eng_desc = next((d.get("value") for d in descriptions if d.get("lang") == "en"), None)
         if not eng_desc and descriptions:
@@ -137,13 +177,14 @@ class NvdService:
             cvss_severity = metrics["cvssMetricV2"][0].get("baseSeverity")
             cvss_vector = cvss_data.get("vectorString")
 
-        # Weaknesses (CWE)
+        # Weaknesses (CWE) - deduplicate while preserving order
         weaknesses = []
         for w in cve_item.get("weaknesses", []):
             for d in w.get("description", []):
                 val = d.get("value")
                 if val and val != "NVD-CWE-Other" and val != "NVD-CWE-noinfo":
                     weaknesses.append(val)
+        weaknesses = list(dict.fromkeys(weaknesses))
 
         # References
         refs = [r.get("url") for r in cve_item.get("references", []) if r.get("url")][:8]
@@ -168,7 +209,7 @@ class NvdService:
     def _build_not_found(self, cve_id: str) -> NvdIntel:
         return NvdIntel(
             cve_id=cve_id,
-            status=IntelSourceStatus.UNKNOWN_OR_MISSING,
+            status=IntelSourceStatus.CONFIRMED_NEGATIVE,
             description="Vulnerability not found in NIST National Vulnerability Database. It may be reserved, rejected, or awaiting primary analysis.",
             cvss_version=None,
             cvss_base_score=None,
@@ -184,10 +225,15 @@ class NvdService:
         )
 
     def _build_unavailable(self, cve_id: str) -> NvdIntel:
+        reason = (
+            "DNS resolution failure for services.nvd.nist.gov"
+            if self.last_status == "dns_resolution_failed"
+            else "network connectivity or upstream service limits"
+        )
         return NvdIntel(
             cve_id=cve_id,
             status=IntelSourceStatus.UNKNOWN_OR_MISSING,
-            description="NIST NVD intelligence is temporarily unreachable due to network connectivity or upstream service limits.",
+            description=f"NIST NVD intelligence is temporarily unreachable due to {reason}.",
             cvss_version=None,
             cvss_base_score=None,
             cvss_severity=None,

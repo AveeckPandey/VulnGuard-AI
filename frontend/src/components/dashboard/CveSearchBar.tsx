@@ -16,7 +16,7 @@ interface CveSearchBarProps {
   setSystemContext: (ctx: string) => void;
 }
 
-const CVE_REGEX = /^CVE-\d{4}-\d{4,8}$/i;
+const CVE_REGEX = /^CVE-\d{4}-\d{4,}$/i;
 
 export const CveSearchBar: React.FC<CveSearchBarProps> = ({
   onAnalyze,

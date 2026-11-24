@@ -32,7 +32,7 @@ export const AssessmentHistoryTable: React.FC<AssessmentHistoryTableProps> = ({
     const matchesKev =
       kevFilter === 'ALL' ||
       (kevFilter === 'KEV_YES' && h.is_known_exploited) ||
-      (kevFilter === 'KEV_NO' && !h.is_known_exploited);
+      (kevFilter === 'KEV_NO' && h.is_known_exploited === false);
 
     return matchesSearch && matchesSeverity && matchesKev;
   });
@@ -48,11 +48,11 @@ export const AssessmentHistoryTable: React.FC<AssessmentHistoryTableProps> = ({
               Vulnerability Investigation History
             </h3>
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-cyan-400 border border-slate-700 font-mono">
-              {filtered.length} of {history.length}
+              {filtered.length} of {history.length} recent (limit 50)
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Historical vulnerability triage records persisted in Amazon DynamoDB
+            Recent vulnerability triage records persisted in Amazon DynamoDB (showing up to 50)
           </p>
         </div>
 
@@ -159,11 +159,13 @@ export const AssessmentHistoryTable: React.FC<AssessmentHistoryTableProps> = ({
                           <Flame className="w-3.5 h-3.5 text-red-500" />
                           <span>Active</span>
                         </span>
-                      ) : (
+                      ) : item.is_known_exploited === false ? (
                         <span className="inline-flex items-center space-x-1 text-emerald-400 text-[10px]">
                           <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                           <span>Negative</span>
                         </span>
+                      ) : (
+                        <span className="text-slate-400 text-[10px]">Unknown</span>
                       )}
                     </td>
                     <td className="py-3 px-3 text-slate-400">

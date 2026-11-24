@@ -1,0 +1,19 @@
+VulnGuard AI - Frontend NPM Audit Report
+Date: 2026-11-24
+
+Vulnerabilities Found:
+2 vulnerabilities (1 moderate, 1 high)
+
+1. esbuild <=0.24.2
+   Severity: moderate
+   Vulnerability: esbuild development server allows any website to send requests to dev server and read response
+   Advisory: GHSA-67mh-4wv8-2f99
+   Path: node_modules/esbuild -> node_modules/vite
+
+2. vite <=6.4.3
+   Severity: moderate / high (dependency chain)
+   Depends on vulnerable versions of esbuild
+
+Recommended Action:
+Upgrade vite to latest secure release when breaking change testing is completed.
+Note: Production deployment uses static bundle on Vercel CDN; this vulnerability affects local dev server mode (vite dev).

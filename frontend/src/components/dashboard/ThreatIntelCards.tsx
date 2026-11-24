@@ -47,7 +47,7 @@ export const ThreatIntelCards: React.FC<ThreatIntelCardsProps> = ({ intel }) => 
             >
               {nvd.cvss_severity || 'UNKNOWN'}
             </span>
-            <span className="text-xs text-slate-400">CVSS v{nvd.cvss_version || '3.1'}</span>
+            <span className="text-xs text-slate-400">{nvd.cvss_version ? `CVSS v${nvd.cvss_version}` : 'CVSS unavailable'}</span>
           </div>
 
           <p className="text-xs text-slate-300 mt-3 line-clamp-3 leading-relaxed">
@@ -57,9 +57,9 @@ export const ThreatIntelCards: React.FC<ThreatIntelCardsProps> = ({ intel }) => 
           {/* Weaknesses */}
           {nvd.weaknesses.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1">
-              {nvd.weaknesses.map((cwe) => (
+              {Array.from(new Set(nvd.weaknesses)).map((cwe, idx) => (
                 <span
-                  key={cwe}
+                  key={`${cwe}-${idx}`}
                   className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"
                 >
                   {cwe}
@@ -130,7 +130,7 @@ export const ThreatIntelCards: React.FC<ThreatIntelCardsProps> = ({ intel }) => 
 
         <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
           <span>Model Date:</span>
-          <span className="text-slate-300 font-mono">{epss.model_date || 'Current'}</span>
+          <span className="text-slate-300 font-mono">{epss.model_date || 'Unknown'}</span>
         </div>
       </div>
 

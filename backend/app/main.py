@@ -2,6 +2,10 @@
 VulnGuard AI - FastAPI Application Entry Point
 Configures routes, CORS middleware, exception handlers, and AWS Lambda Mangum handler.
 """
+import warnings
+warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="starlette")
+
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status

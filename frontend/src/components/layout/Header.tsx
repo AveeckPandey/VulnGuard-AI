@@ -26,7 +26,17 @@ export const Header: React.FC<HeaderProps> = ({
   setMobileMenuOpen,
 }) => {
   const isHealthy = systemHealth === 'healthy';
+  const isConnecting = systemHealth === null || systemHealth === undefined;
   const kevCount = intelFeeds?.feeds?.cisa_kev?.known_exploited_cves_count || 1790;
+  const nvdFeed = intelFeeds?.feeds?.nist_nvd;
+  const epssFeed = intelFeeds?.feeds?.first_epss;
+  const kevFeed = intelFeeds?.feeds?.cisa_kev;
+
+  const getFeedColor = (status?: string) => {
+    if (!status || status === 'operational') return 'bg-emerald-400';
+    if (status === 'rate_limited' || status === 'degraded') return 'bg-amber-400';
+    return 'bg-red-400';
+  };
 
   const pageTitles: Record<TabType, { title: string; subtitle: string }> = {
     overview: {
@@ -104,16 +114,25 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center space-x-2 sm:space-x-3">
           {/* Feed Pills */}
           <div className="hidden lg:flex items-center space-x-1.5 text-xs">
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <div
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300 cursor-default"
+              title={nvdFeed?.last_error ? `NVD: ${nvdFeed.last_error}` : `NVD 2.0: ${nvdFeed?.status || 'operational'}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${getFeedColor(nvdFeed?.status)} ${nvdFeed?.status === 'operational' ? 'animate-pulse' : ''}`} />
               <span>NVD 2.0</span>
             </div>
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+            <div
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300 cursor-default"
+              title={epssFeed?.last_error ? `EPSS: ${epssFeed.last_error}` : `EPSS v3: ${epssFeed?.status || 'operational'}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${getFeedColor(epssFeed?.status)}`} />
               <span>EPSS v3</span>
             </div>
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+            <div
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300 cursor-default"
+              title={kevFeed?.last_error ? `CISA KEV: ${kevFeed.last_error}` : `CISA KEV: ${kevFeed?.status || 'operational'} (${kevCount} catalogued)`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${getFeedColor(kevFeed?.status)}`} />
               <span>CISA KEV ({kevCount})</span>
             </div>
           </div>
@@ -145,14 +164,32 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Health Indicator */}
           <div
             className={`flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-xl border ${
-              isHealthy
+              isConnecting
+                ? 'bg-slate-900/80 border-slate-800 text-slate-400'
+                : isHealthy
                 ? 'bg-slate-900/80 border-slate-800 text-slate-300'
                 : 'bg-red-500/10 border-red-500/30 text-red-400'
             }`}
-            title={isHealthy ? 'FastAPI & DynamoDB Online' : 'Backend Unreachable'}
+            title={
+              isConnecting
+                ? 'Connecting to API...'
+                : isHealthy
+                ? 'FastAPI & DynamoDB Online'
+                : 'Backend Unreachable'
+            }
           >
-            <Wifi className={`w-3.5 h-3.5 ${isHealthy ? 'text-emerald-400' : 'text-red-400 animate-pulse'}`} />
-            <span className="hidden sm:inline">{isHealthy ? 'API Online' : 'Offline'}</span>
+            <Wifi
+              className={`w-3.5 h-3.5 ${
+                isConnecting
+                  ? 'text-cyan-400 animate-pulse'
+                  : isHealthy
+                  ? 'text-emerald-400'
+                  : 'text-red-400 animate-pulse'
+              }`}
+            />
+            <span className="hidden sm:inline">
+              {isConnecting ? 'Connecting...' : isHealthy ? 'API Online' : 'Offline'}
+            </span>
           </div>
         </div>
       </div>
