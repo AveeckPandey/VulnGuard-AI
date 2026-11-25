@@ -73,9 +73,11 @@ function WorkspaceMark() {
 function UserFooter({
   user,
   onOpenAuthModal,
+  onOpenSettings,
 }: {
   user: UserProfile | null;
   onOpenAuthModal: () => void;
+  onOpenSettings: () => void;
 }) {
   const { collapsed } = useSidebar();
 
@@ -83,8 +85,8 @@ function UserFooter({
     return (
       <button
         type="button"
-        onClick={onOpenAuthModal}
-        title={collapsed ? `${user.name || user.username}` : 'Account'}
+        onClick={onOpenSettings}
+        title={collapsed ? `${user.name || user.username} — Settings` : 'Open Settings'}
         className="flex w-full min-w-0 items-center gap-2.5 rounded-lg text-left transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-zinc-950">
@@ -264,7 +266,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </SidebarNav>
 
       <SidebarFooter>
-        <UserFooter user={user} onOpenAuthModal={onOpenAuthModal} />
+        <UserFooter
+          user={user}
+          onOpenAuthModal={onOpenAuthModal}
+          onOpenSettings={() => setActiveTab('settings')}
+        />
       </SidebarFooter>
     </PrimitiveSidebar>
   );

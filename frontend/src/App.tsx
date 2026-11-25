@@ -316,6 +316,7 @@ export function App() {
           setMobileMenuOpen={setMobileMenuOpen}
           user={authState.user}
           onOpenAuthModal={() => setAuthModalOpen(true)}
+          onOpenSettings={() => setActiveTab('settings')}
           onSignOut={handleSignOut}
         />
 
