@@ -244,10 +244,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-border bg-popover py-1.5 text-xs shadow-2xl">
                     <div className="border-b border-border px-3.5 py-2.5">
                       <div className="truncate font-semibold text-foreground">{user.name || user.username}</div>
-                      <div className="truncate text-[11px] text-muted-foreground">{user.email || 'No email registered'}</div>
-                      <div className="mt-1 truncate font-mono text-[10px] text-zinc-400">
-                        ID: {user.sub}
-                      </div>
+                      <div className="truncate text-[11px] text-muted-foreground">{user.email || 'Signed in'}</div>
                     </div>
 
                     <div className="p-1">
@@ -260,7 +257,7 @@ export const Header: React.FC<HeaderProps> = ({
                         className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-zinc-300 transition-colors hover:bg-white/[0.05] hover:text-foreground"
                       >
                         <UserCheck className="size-3.5 text-muted-foreground" />
-                        <span>Switch Persona / Auth</span>
+                        <span>Switch Account</span>
                       </button>
 
                       <button

@@ -60,11 +60,11 @@ export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
                     {user ? `${user.name || user.username}'s Personal Workspace` : 'Guest Security Workspace'}
                   </h2>
                   <span className="rounded-md border border-border bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    {user ? (user.isDemo ? 'Demo Persona' : 'Cognito User') : 'Unauthenticated'}
+                    {user ? (user.isDemo ? 'Demo' : 'Active Account') : 'Guest'}
                   </span>
                 </div>
-                <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                  Tenant ID (sub): <span className="text-zinc-200">{user?.sub || 'anonymous-session'}</span>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {user?.email ? `Signed in as ${user.email}` : 'Guest session · Assessments are not saved'}
                 </p>
               </div>
             </div>

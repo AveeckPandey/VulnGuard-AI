@@ -80,3 +80,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.28);
 }
+
+/* Keep dark inputs clean across browser password reveal & autofill states */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fafafa;
+  -webkit-box-shadow: 0 0 0 1000px #0d0d10 inset;
+  transition: background-color 5000s ease-in-out 0s;
+}

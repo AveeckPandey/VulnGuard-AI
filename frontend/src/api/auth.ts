@@ -4,17 +4,141 @@ const SESSION_STORAGE_KEY = 'vulnguard_auth_session';
 const PKCE_STORAGE_KEY = 'vulnguard_pkce';
 const cognitoDomain = (import.meta.env.VITE_COGNITO_DOMAIN || '').replace(/\/$/, '');
 const cognitoClientId = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
+const cognitoRegion =
+  import.meta.env.VITE_COGNITO_REGION ||
+  cognitoDomain.match(/\.auth\.([a-z0-9-]+)\.amazoncognito\.com/i)?.[1] ||
+  'us-east-1';
+
+export interface PasswordRuleResult {
+  id: string;
+  label: string;
+  met: boolean;
+}
+
+export function evaluatePasswordRules(password: string): PasswordRuleResult[] {
+  return [
+    { id: 'lower', label: 'Contains a lowercase letter', met: /[a-z]/.test(password) },
+    { id: 'upper', label: 'Contains an uppercase letter', met: /[A-Z]/.test(password) },
+    { id: 'number', label: 'Contains a number', met: /[0-9]/.test(password) },
+    { id: 'length', label: 'At least 8 characters', met: password.length >= 8 },
+    { id: 'spaces', label: 'No leading or trailing spaces', met: password.length > 0 && password === password.trim() },
+  ];
+}
 
 function callbackUrl(): string {
   return `${window.location.origin}/callback`;
 }
 
 export function isCognitoConfigured(): boolean {
-  return Boolean(cognitoDomain && cognitoClientId);
+  return Boolean(cognitoClientId && (cognitoDomain || import.meta.env.VITE_COGNITO_REGION));
+}
+
+async function callCognitoIdp<T = any>(action: string, payload: Record<string, unknown>): Promise<T> {
+  if (!isCognitoConfigured()) {
+    throw new Error('Authentication is not configured for this deployment.');
+  }
+  const response = await fetch(`https://cognito-idp.${cognitoRegion}.amazonaws.com/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-amz-json-1.1',
+      'X-Amz-Target': `AWSCognitoIdentityProviderService.${action}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error(data.message || 'Authentication request failed.') as Error & { code?: string };
+    err.code = String(data.__type || '').split('#').pop() || 'AuthError';
+    throw err;
+  }
+  return data as T;
+}
+
+export async function signInWithEmail(email: string, password: string): Promise<AuthSession> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const data = await callCognitoIdp<{
+    AuthenticationResult?: { AccessToken?: string; IdToken?: string; RefreshToken?: string };
+    ChallengeName?: string;
+  }>('InitiateAuth', {
+    AuthFlow: 'USER_PASSWORD_AUTH',
+    ClientId: cognitoClientId,
+    AuthParameters: { USERNAME: normalizedEmail, PASSWORD: password },
+  });
+
+  if (data.ChallengeName || !data.AuthenticationResult?.AccessToken) {
+    throw new Error(
+      data.ChallengeName
+        ? `Additional verification (${data.ChallengeName}) is required for this account.`
+        : 'Sign-in did not return a valid session.'
+    );
+  }
+
+  const session = authManager.loginWithTokens(
+    data.AuthenticationResult.AccessToken,
+    data.AuthenticationResult.IdToken
+  );
+  session.refreshToken = data.AuthenticationResult.RefreshToken;
+  session.viaHostedUi = false;
+  authManager.setSession(session);
+  return session;
+}
+
+export async function signUpWithEmail(
+  email: string,
+  password: string
+): Promise<{ userConfirmed: boolean; deliveryDestination?: string }> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const data = await callCognitoIdp<{
+    UserConfirmed?: boolean;
+    CodeDeliveryDetails?: { Destination?: string };
+  }>('SignUp', {
+    ClientId: cognitoClientId,
+    Username: normalizedEmail,
+    Password: password,
+    UserAttributes: [{ Name: 'email', Value: normalizedEmail }],
+  });
+
+  return {
+    userConfirmed: Boolean(data.UserConfirmed),
+    deliveryDestination: data.CodeDeliveryDetails?.Destination,
+  };
+}
+
+export async function confirmSignUpCode(email: string, code: string): Promise<void> {
+  await callCognitoIdp('ConfirmSignUp', {
+    ClientId: cognitoClientId,
+    Username: email.trim().toLowerCase(),
+    ConfirmationCode: code.trim(),
+  });
+}
+
+export async function resendSignUpCode(email: string): Promise<string | undefined> {
+  const data = await callCognitoIdp<{ CodeDeliveryDetails?: { Destination?: string } }>(
+    'ResendConfirmationCode',
+    { ClientId: cognitoClientId, Username: email.trim().toLowerCase() }
+  );
+  return data.CodeDeliveryDetails?.Destination;
+}
+
+export async function requestPasswordReset(email: string): Promise<string | undefined> {
+  const data = await callCognitoIdp<{ CodeDeliveryDetails?: { Destination?: string } }>(
+    'ForgotPassword',
+    { ClientId: cognitoClientId, Username: email.trim().toLowerCase() }
+  );
+  return data.CodeDeliveryDetails?.Destination;
+}
+
+export async function confirmPasswordReset(email: string, code: string, newPassword: string): Promise<void> {
+  await callCognitoIdp('ConfirmForgotPassword', {
+    ClientId: cognitoClientId,
+    Username: email.trim().toLowerCase(),
+    ConfirmationCode: code.trim(),
+    Password: newPassword,
+  });
 }
 
 export async function beginCognitoLogin(signUp = false): Promise<void> {
-  if (!isCognitoConfigured()) throw new Error('Cognito is not configured for this deployment.');
+  if (!isCognitoConfigured() || !cognitoDomain) throw new Error('Authentication is not configured for this deployment.');
   const { verifier, challenge } = await generatePkcePair();
   const state = Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
   sessionStorage.setItem(PKCE_STORAGE_KEY, JSON.stringify({ verifier, state }));
@@ -45,11 +169,12 @@ export async function completeCognitoLogin(): Promise<AuthSession | null> {
       redirect_uri: callbackUrl(), code: params.get('code')!, code_verifier: verifier,
     }),
   });
-  if (!response.ok) throw new Error('Cognito could not complete sign-in. Please try again.');
+  if (!response.ok) throw new Error('Could not complete sign-in. Please try again.');
   const result = await response.json();
-  if (!result.access_token || !result.id_token) throw new Error('Cognito returned an incomplete session.');
+  if (!result.access_token || !result.id_token) throw new Error('Authentication returned an incomplete session.');
   const session = authManager.loginWithTokens(result.access_token, result.id_token);
   session.refreshToken = result.refresh_token;
+  session.viaHostedUi = true;
   authManager.setSession(session);
   return session;
 }
@@ -149,25 +274,27 @@ export const authManager = {
     }
   },
 
-  // Log in using standard Cognito User Pools JWT tokens
+  // Log in using standard User Pool JWT tokens
   loginWithTokens(accessToken: string, idToken?: string): AuthSession {
     const claims = parseJwt(accessToken);
     const profile = idToken ? parseJwt(idToken) : null;
     if (!claims?.sub || !claims?.exp || claims.token_use !== 'access') {
-      throw new Error('An unexpired Cognito access token is required.');
+      throw new Error('An unexpired access token is required.');
     }
     if (claims.exp <= Math.floor(Date.now() / 1000)) throw new Error('The access token has expired.');
     if (cognitoClientId && claims.client_id !== cognitoClientId) throw new Error('Token belongs to another application.');
     const sub = claims.sub;
-    const email = profile?.email || claims.email || `${sub.slice(0, 8)}@cognito.local`;
+    const email = profile?.email || claims.email || '';
     const exp = claims.exp || Math.floor(Date.now() / 1000) + 3600;
-    const username = claims['cognito:username'] || email.split('@')[0];
+    const rawUsername = claims['cognito:username'] || profile?.['cognito:username'] || claims.username || '';
+    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/i.test(rawUsername) || rawUsername === sub;
+    const handle = !looksLikeUuid && rawUsername ? rawUsername : email ? email.split('@')[0] : 'member';
 
     const user: UserProfile = {
       sub,
       email,
-      username,
-      name: profile?.name || claims.name || username,
+      username: handle,
+      name: profile?.name || claims.name || handle,
       isDemo: false,
       clientType: 'cognito_user',
     };
@@ -212,9 +339,18 @@ export const authManager = {
   },
 
   signOut(): void {
-    const wasDemo = this.getCurrentUser()?.isDemo;
+    const session = this.getSession();
+    const wasDemo = session?.user?.isDemo;
+    const wasHostedUi = session?.viaHostedUi;
+    const refreshToken = session?.refreshToken;
     this.clearSession();
-    if (isCognitoConfigured() && !wasDemo) {
+    if (!wasDemo && refreshToken && isCognitoConfigured()) {
+      void callCognitoIdp('RevokeToken', {
+        Token: refreshToken,
+        ClientId: cognitoClientId,
+      }).catch(() => undefined);
+    }
+    if (isCognitoConfigured() && cognitoDomain && !wasDemo && wasHostedUi) {
       const url = new URL(`${cognitoDomain}/logout`);
       url.search = new URLSearchParams({ client_id: cognitoClientId, logout_uri: window.location.origin }).toString();
       window.location.assign(url.toString());

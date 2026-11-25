@@ -140,7 +140,7 @@ export function App() {
       if (error instanceof ApiError) {
         if (error.status === 401) {
           setErrorMessage(
-            'Authentication Required (HTTP 401): Please sign in with Cognito or select a demo persona to run user-isolated assessments.'
+            'Authentication Required (HTTP 401): Please sign in to run and save private assessments.'
           );
           setAuthModalOpen(true);
         } else {

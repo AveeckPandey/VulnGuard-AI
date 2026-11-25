@@ -84,7 +84,7 @@ function UserFooter({
       <button
         type="button"
         onClick={onOpenAuthModal}
-        title={collapsed ? `${user.name || user.username} (${user.sub})` : 'Switch Persona / Auth'}
+        title={collapsed ? `${user.name || user.username}` : 'Account'}
         className="flex w-full min-w-0 items-center gap-2.5 rounded-lg text-left transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-zinc-950">
@@ -96,12 +96,12 @@ function UserFooter({
               <span className="truncate text-[12.5px] font-medium leading-tight text-foreground">
                 {user.name || user.username}
               </span>
-              <span className="shrink-0 rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-[9.5px] text-muted-foreground">
-                {user.isDemo ? 'Demo' : 'Cognito'}
+              <span className="shrink-0 rounded bg-white/[0.07] px-1.5 py-0.5 text-[9.5px] font-medium text-muted-foreground">
+                {user.isDemo ? 'Demo' : 'Account'}
               </span>
             </div>
-            <div className="truncate font-mono text-[10.5px] leading-tight text-muted-foreground">
-              {user.sub}
+            <div className="truncate text-[11px] leading-tight text-muted-foreground">
+              {user.email || 'Signed in'}
             </div>
           </div>
         )}

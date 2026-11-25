@@ -12,6 +12,7 @@ export interface AuthSession {
   idToken?: string;
   refreshToken?: string;
   expiresAt: number; // Unix timestamp in seconds
+  viaHostedUi?: boolean;
   user: UserProfile;
 }
 
