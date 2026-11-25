@@ -80,6 +80,9 @@ function UserFooter({
   onOpenSettings: () => void;
 }) {
   const { collapsed } = useSidebar();
+  const buttonClass = collapsed
+    ? 'flex size-9 items-center justify-center rounded-lg transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+    : 'flex w-full min-w-0 items-center gap-2.5 rounded-lg text-left transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
   if (user) {
     return (
@@ -87,7 +90,7 @@ function UserFooter({
         type="button"
         onClick={onOpenSettings}
         title={collapsed ? `${user.name || user.username} — Settings` : 'Open Settings'}
-        className="flex w-full min-w-0 items-center gap-2.5 rounded-lg text-left transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={buttonClass}
       >
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-zinc-950">
           {(user.name || user.username).charAt(0).toUpperCase()}
@@ -116,7 +119,7 @@ function UserFooter({
       type="button"
       onClick={onOpenAuthModal}
       title={collapsed ? 'Guest Mode — Sign In / Switch' : undefined}
-      className="flex w-full min-w-0 items-center gap-2.5 rounded-lg text-left transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={buttonClass}
     >
       <div className="flex size-6 shrink-0 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.04] text-muted-foreground">
         <Lock className="size-3" />
