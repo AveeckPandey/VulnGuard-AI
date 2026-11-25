@@ -5,6 +5,8 @@ import {
   Database,
   ArrowLeft,
   ExternalLink,
+  FolderPlus,
+  History,
 } from 'lucide-react';
 import { AssessmentResponse } from '../../types/assessment';
 import { RiskScoreCard } from '../dashboard/RiskScoreCard';
@@ -18,12 +20,16 @@ interface AssessmentDetailModalProps {
   assessment: AssessmentResponse | null;
   onClose: () => void;
   onLoadIntoAnalyzer: (assessment: AssessmentResponse) => void;
+  isInWorkspace?: boolean;
+  onToggleWorkspaceScope?: (id: string) => void;
 }
 
 export const AssessmentDetailModal: React.FC<AssessmentDetailModalProps> = ({
   assessment,
   onClose,
   onLoadIntoAnalyzer,
+  isInWorkspace = false,
+  onToggleWorkspaceScope,
 }) => {
   if (!assessment) return null;
 
@@ -64,6 +70,25 @@ export const AssessmentDetailModal: React.FC<AssessmentDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onToggleWorkspaceScope && (
+              <button
+                type="button"
+                onClick={() => onToggleWorkspaceScope(assessment.id)}
+                className="hidden items-center gap-1.5 rounded-lg border border-border bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-white/[0.08] sm:flex"
+              >
+                {isInWorkspace ? (
+                  <>
+                    <History className="size-3.5 text-muted-foreground" />
+                    <span>Move to History</span>
+                  </>
+                ) : (
+                  <>
+                    <FolderPlus className="size-3.5 text-sky-400" />
+                    <span>Save to Workspace</span>
+                  </>
+                )}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onLoadIntoAnalyzer(assessment)}

@@ -10,6 +10,7 @@ import {
   Lock,
   Layers,
   Sparkles,
+  History,
 } from 'lucide-react';
 import { UserWorkspaceSummary } from '../../types/assessment';
 import { UserProfile } from '../../types/auth';
@@ -23,6 +24,7 @@ interface MyWorkspaceViewProps {
   onSelectAssessment: (id: string) => void;
   onSelectPreset: (cveId: string, criticality: any, exposure: any, context: string) => void;
   onOpenAuthModal: () => void;
+  onMoveToHistory?: (id: string) => void;
 }
 
 export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
@@ -33,6 +35,7 @@ export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
   onSelectAssessment,
   onSelectPreset,
   onOpenAuthModal,
+  onMoveToHistory,
 }) => {
   const isAnonymous = !user;
   const total = workspace?.total_assessments ?? 0;
@@ -185,10 +188,10 @@ export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
           <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Database className="size-4 text-muted-foreground" />
-              <span>My Recent Assessments</span>
+              <span>Workspace Assessments</span>
             </h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Vulnerabilities analyzed and saved under your user account
+              Assessments created from or pinned to My Workspace (kept separate from Assessment History)
             </p>
           </div>
           {recent.length > 0 && (
@@ -298,17 +301,33 @@ export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
                         {formatDate(item.created_at)}
                       </td>
                       <td className="px-3 py-3.5 text-right">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectAssessment(item.id);
-                          }}
-                          className="rounded-lg border border-border bg-white/[0.04] p-1.5 text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-foreground"
-                          title="Inspect Assessment"
-                        >
-                          <ArrowRight className="size-3.5" />
-                        </button>
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          {onMoveToHistory && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMoveToHistory(item.id);
+                              }}
+                              className="rounded-lg border border-border bg-white/[0.04] p-1.5 text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                              title="Move to Assessment History"
+                              aria-label={`Move ${item.cve_id} to Assessment History`}
+                            >
+                              <History className="size-3.5" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectAssessment(item.id);
+                            }}
+                            className="rounded-lg border border-border bg-white/[0.04] p-1.5 text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                            title="Inspect Assessment"
+                          >
+                            <ArrowRight className="size-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

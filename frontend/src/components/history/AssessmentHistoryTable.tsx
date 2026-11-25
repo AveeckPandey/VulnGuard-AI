@@ -11,6 +11,7 @@ import {
   ChevronRight,
   CheckSquare,
   Square,
+  FolderPlus,
 } from 'lucide-react';
 import { AssessmentSummary } from '../../types/assessment';
 import { formatDate, formatProbability, getPriorityStyles } from '../../utils/formatters';
@@ -22,6 +23,7 @@ interface AssessmentHistoryTableProps {
   onRefresh: () => void;
   isLoading: boolean;
   onLoadIntoAnalyzer?: (item: AssessmentSummary) => void;
+  onMoveToWorkspace?: (id: string) => void;
 }
 
 const PAGE_SIZE = 10;
@@ -32,6 +34,7 @@ export const AssessmentHistoryTable: React.FC<AssessmentHistoryTableProps> = ({
   onRefresh,
   isLoading,
   onLoadIntoAnalyzer,
+  onMoveToWorkspace,
 }) => {
   const [filter, setFilter] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
@@ -96,14 +99,14 @@ export const AssessmentHistoryTable: React.FC<AssessmentHistoryTableProps> = ({
           <div className="flex items-center gap-2">
             <History className="size-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold tracking-tight text-foreground">
-              My Assessment Audit History
+              Assessment Audit History
             </h3>
             <span className="rounded-md bg-white/[0.06] px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground tabular-nums">
               {filtered.length} {filtered.length === 1 ? 'record' : 'records'}
             </span>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Personal vulnerability triage records scoped privately to your session
+            Standalone triage audit log · Assessments assigned to My Workspace are excluded
           </p>
         </div>
 
@@ -289,17 +292,33 @@ export const AssessmentHistoryTable: React.FC<AssessmentHistoryTableProps> = ({
                       {formatDate(item.created_at)}
                     </td>
                     <td className="px-3 py-3.5 text-right">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectAssessment(item.id);
-                        }}
-                        className="rounded-lg border border-border bg-white/[0.04] p-1.5 text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-foreground"
-                        title="Inspect Assessment"
-                      >
-                        <ArrowRight className="size-3.5" />
-                      </button>
+                      <div className="inline-flex items-center justify-end gap-1.5">
+                        {onMoveToWorkspace && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMoveToWorkspace(item.id);
+                            }}
+                            className="rounded-lg border border-border bg-white/[0.04] p-1.5 text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                            title="Move to My Workspace"
+                            aria-label={`Move ${item.cve_id} to My Workspace`}
+                          >
+                            <FolderPlus className="size-3.5" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectAssessment(item.id);
+                          }}
+                          className="rounded-lg border border-border bg-white/[0.04] p-1.5 text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                          title="Inspect Assessment"
+                        >
+                          <ArrowRight className="size-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

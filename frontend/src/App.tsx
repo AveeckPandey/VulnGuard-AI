@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import ElectricLogo from '@/components/ui/ElectricLogo';
 import { Header } from './components/layout/Header';
@@ -21,6 +21,11 @@ import { AuthModal } from './components/auth/AuthModal';
 import { apiClient, ApiError, getResolvedApiEndpointDisplay } from './api/client';
 import { authService, authManager, completeCognitoLogin } from './api/auth';
 import {
+  getWorkspaceOwnerKey,
+  loadWorkspaceIds,
+  saveWorkspaceIds,
+} from './utils/workspaceScope';
+import {
   AssessmentResponse,
   AssessmentSummary,
   AssetCriticality,
@@ -29,7 +34,7 @@ import {
   UserWorkspaceSummary,
 } from './types/assessment';
 import { AuthState, UserProfile } from './types/auth';
-import { AlertCircle, Shield, WifiOff } from 'lucide-react';
+import { AlertCircle, FolderPlus, History, Shield, WifiOff } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -58,6 +63,65 @@ export function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const ownerKey = getWorkspaceOwnerKey(authState.user?.sub);
+  const [workspaceIds, setWorkspaceIds] = useState<string[]>(() => loadWorkspaceIds(ownerKey));
+  const pendingWorkspaceRunRef = useRef<boolean>(false);
+
+  const navigateToTab = useCallback((tab: TabType, forWorkspace = false) => {
+    pendingWorkspaceRunRef.current = forWorkspace;
+    setActiveTab(tab);
+  }, []);
+
+  const assignAssessmentScope = useCallback(
+    (id: string, toWorkspace: boolean) => {
+      setWorkspaceIds((prev) => {
+        const next = toWorkspace
+          ? [...prev, id]
+          : prev.filter((itemId) => itemId !== id);
+        return saveWorkspaceIds(ownerKey, next);
+      });
+    },
+    [ownerKey]
+  );
+
+  const workspaceIdSet = useMemo(() => new Set(workspaceIds), [workspaceIds]);
+
+  const workspaceItems = useMemo(() => {
+    const byId = new Map<string, AssessmentSummary>();
+    for (const item of userWorkspace?.recent_assessments ?? []) {
+      byId.set(item.id, item);
+    }
+    for (const item of history) {
+      if (!byId.has(item.id)) byId.set(item.id, item);
+    }
+    return Array.from(byId.values()).filter((item) => workspaceIdSet.has(item.id));
+  }, [userWorkspace, history, workspaceIdSet]);
+
+  const auditHistory = useMemo(
+    () => history.filter((item) => !workspaceIdSet.has(item.id)),
+    [history, workspaceIdSet]
+  );
+
+  const scopedWorkspace = useMemo<UserWorkspaceSummary | null>(() => {
+    if (!authState.isAuthenticated && workspaceItems.length === 0) {
+      return null;
+    }
+    const dist = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+    for (const item of workspaceItems) {
+      if (item.priority_level in dist) {
+        dist[item.priority_level] += 1;
+      }
+    }
+    return {
+      user_id: userWorkspace?.user_id || ownerKey,
+      email: userWorkspace?.email ?? authState.user?.email ?? null,
+      client_type: userWorkspace?.client_type,
+      total_assessments: workspaceItems.length,
+      recent_assessments: workspaceItems,
+      priority_distribution: dist,
+    };
+  }, [authState.isAuthenticated, authState.user?.email, ownerKey, userWorkspace, workspaceItems]);
 
   // Complete the Cognito authorization-code exchange after the hosted login redirects back.
   useEffect(() => {
@@ -117,6 +181,8 @@ export function App() {
     setUserWorkspace(null);
     setCurrentAssessment(null);
     setDetailedAssessment(null);
+    setWorkspaceIds(loadWorkspaceIds(getWorkspaceOwnerKey(authState.user?.sub)));
+    pendingWorkspaceRunRef.current = false;
   }, [authState.user?.sub, authState.session?.accessToken]);
 
   useEffect(() => {
@@ -126,6 +192,8 @@ export function App() {
   }, [fetchSystemStatus, loadHistory, loadWorkspace]);
 
   const handleAnalyze = async (request: AssessmentRequest) => {
+    const runForWorkspace = pendingWorkspaceRunRef.current;
+    pendingWorkspaceRunRef.current = false;
     const requestToken = authManager.getAccessToken();
     setIsLoading(true);
     setErrorMessage(null);
@@ -133,6 +201,9 @@ export function App() {
     try {
       const result = await apiClient.analyzeVulnerability(request);
       if (requestToken !== authManager.getAccessToken()) return;
+      if (runForWorkspace) {
+        assignAssessmentScope(result.id, true);
+      }
       setCurrentAssessment(result);
       loadHistory();
       loadWorkspace();
@@ -158,8 +229,10 @@ export function App() {
     cveId: string,
     crit: AssetCriticality,
     expo: InternetExposure,
-    ctx: string
+    ctx: string,
+    fromWorkspace = false
   ) => {
+    pendingWorkspaceRunRef.current = fromWorkspace;
     setSelectedCve(cveId);
     setCriticality(crit);
     setExposure(expo);
@@ -252,9 +325,9 @@ export function App() {
         <Sidebar
           variant="collapsible"
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onSelectPresetCve={handleSelectPresetCve}
-          historyCount={history.length}
+          setActiveTab={(tab) => navigateToTab(tab)}
+          onSelectPresetCve={(cve, crit, expo, ctx) => handleSelectPresetCve(cve, crit, expo, ctx, false)}
+          historyCount={auditHistory.length}
           user={authState.user}
           onOpenAuthModal={() => setAuthModalOpen(true)}
         />
@@ -283,14 +356,14 @@ export function App() {
                 variant="default"
                 activeTab={activeTab}
                 setActiveTab={(tab) => {
-                  setActiveTab(tab);
+                  navigateToTab(tab);
                   setMobileMenuOpen(false);
                 }}
                 onSelectPresetCve={(cve, crit, expo, ctx) => {
-                  handleSelectPresetCve(cve, crit, expo, ctx);
+                  handleSelectPresetCve(cve, crit, expo, ctx, false);
                   setMobileMenuOpen(false);
                 }}
-                historyCount={history.length}
+                historyCount={auditHistory.length}
                 user={authState.user}
                 onOpenAuthModal={() => {
                   setMobileMenuOpen(false);
@@ -316,7 +389,7 @@ export function App() {
           setMobileMenuOpen={setMobileMenuOpen}
           user={authState.user}
           onOpenAuthModal={() => setAuthModalOpen(true)}
-          onOpenSettings={() => setActiveTab('settings')}
+          onOpenSettings={() => navigateToTab('settings')}
           onSignOut={handleSignOut}
         />
 
@@ -372,8 +445,8 @@ export function App() {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <LandingHero
-                  onNavigateToAnalyzer={() => setActiveTab('analyzer')}
-                  onSelectPreset={handleSelectPresetCve}
+                  onNavigateToAnalyzer={() => navigateToTab('analyzer')}
+                  onSelectPreset={(cve, crit, expo, ctx) => handleSelectPresetCve(cve, crit, expo, ctx, false)}
                   onOpenAuthModal={() => setAuthModalOpen(true)}
                   isAuthenticated={authState.isAuthenticated}
                 />
@@ -381,7 +454,7 @@ export function App() {
                 <OverviewView
                   history={history}
                   onSelectAssessment={handleSelectAssessment}
-                  onNavigateToAnalyzer={() => setActiveTab('analyzer')}
+                  onNavigateToAnalyzer={() => navigateToTab('analyzer')}
                 />
               </div>
             )}
@@ -390,12 +463,13 @@ export function App() {
             {activeTab === 'workspace' && (
               <MyWorkspaceView
                 user={authState.user}
-                workspace={userWorkspace}
+                workspace={scopedWorkspace}
                 intelFeeds={intelFeeds}
-                onNavigateToAnalyzer={() => setActiveTab('analyzer')}
+                onNavigateToAnalyzer={() => navigateToTab('analyzer', true)}
                 onSelectAssessment={handleSelectAssessment}
-                onSelectPreset={handleSelectPresetCve}
+                onSelectPreset={(cve, crit, expo, ctx) => handleSelectPresetCve(cve, crit, expo, ctx, true)}
                 onOpenAuthModal={() => setAuthModalOpen(true)}
+                onMoveToHistory={(id) => assignAssessmentScope(id, false)}
               />
             )}
 
@@ -418,6 +492,41 @@ export function App() {
 
                 {currentAssessment ? (
                   <div className="space-y-6">
+                    <div className="surface-panel flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-2.5 text-xs">
+                      <span className="text-muted-foreground">
+                        {workspaceIdSet.has(currentAssessment.id) ? (
+                          <>
+                            Location: <strong className="text-emerald-400">My Workspace</strong> (hidden from Assessment History)
+                          </>
+                        ) : (
+                          <>
+                            Location: <strong className="text-foreground">Assessment History</strong> (not in My Workspace)
+                          </>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          assignAssessmentScope(
+                            currentAssessment.id,
+                            !workspaceIdSet.has(currentAssessment.id)
+                          )
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white/[0.04] px-3 py-1.5 font-medium text-foreground transition-colors hover:bg-white/[0.08]"
+                      >
+                        {workspaceIdSet.has(currentAssessment.id) ? (
+                          <>
+                            <History className="size-3.5 text-muted-foreground" />
+                            <span>Move to Assessment History</span>
+                          </>
+                        ) : (
+                          <>
+                            <FolderPlus className="size-3.5 text-sky-400" />
+                            <span>Save to My Workspace</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                     <RiskScoreCard assessment={currentAssessment} />
                     <ThreatIntelCards intel={currentAssessment.intelligence} />
                     <FactorBreakdownChart
@@ -447,11 +556,12 @@ export function App() {
             {/* TAB 4: ASSESSMENT HISTORY */}
             {activeTab === 'history' && (
               <AssessmentHistoryTable
-                history={history}
+                history={auditHistory}
                 onSelectAssessment={handleSelectAssessment}
                 onRefresh={loadHistory}
                 isLoading={isRefreshing}
                 onLoadIntoAnalyzer={handleLoadIntoAnalyzer}
+                onMoveToWorkspace={(id) => assignAssessmentScope(id, true)}
               />
             )}
 
@@ -477,7 +587,7 @@ export function App() {
           {/* Global Full-Bleed Workspace Footer */}
           <Footer
             user={authState.user}
-            onNavigate={setActiveTab}
+            onNavigate={(tab) => navigateToTab(tab)}
             onOpenAuthModal={() => setAuthModalOpen(true)}
           />
         </main>
@@ -489,6 +599,10 @@ export function App() {
           assessment={detailedAssessment}
           onClose={() => setDetailedAssessment(null)}
           onLoadIntoAnalyzer={handleLoadIntoAnalyzer}
+          isInWorkspace={workspaceIdSet.has(detailedAssessment.id)}
+          onToggleWorkspaceScope={(id) =>
+            assignAssessmentScope(id, !workspaceIdSet.has(id))
+          }
         />
       )}
 
