@@ -21,39 +21,130 @@ export const AssessmentComparisonModal: React.FC<AssessmentComparisonModalProps>
 
   const scoreDiff = assessmentA.total_score - assessmentB.total_score;
 
+  const renderColumn = (
+    label: string,
+    item: AssessmentSummary,
+    styles: ReturnType<typeof getPriorityStyles>
+  ) => (
+    <div className="surface-subpanel space-y-4 rounded-xl p-4">
+      <div className="flex items-center justify-between border-b border-border pb-3">
+        <div>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            {label}
+          </span>
+          <h4 className="font-mono text-base font-semibold text-foreground">{item.cve_id}</h4>
+        </div>
+        <span className={`rounded-md border px-2.5 py-0.5 text-[11px] font-semibold ${styles.badge}`}>
+          {item.priority_level}
+        </span>
+      </div>
+
+      <div className="space-y-2.5 text-xs">
+        <div className="flex justify-between border-b border-border py-1.5">
+          <span className="text-muted-foreground">Deterministic Total Score:</span>
+          <span className="font-mono text-sm font-semibold text-foreground">{item.total_score} / 100</span>
+        </div>
+
+        <div className="flex justify-between border-b border-border py-1.5">
+          <span className="text-muted-foreground">CVSS v3.1 Base Score:</span>
+          <span className="font-mono text-zinc-200">
+            {item.cvss_base_score !== null ? item.cvss_base_score.toFixed(1) : 'N/A'}
+          </span>
+        </div>
+
+        <div className="flex justify-between border-b border-border py-1.5">
+          <span className="text-muted-foreground">EPSS Exploit Likelihood:</span>
+          <span className="font-mono text-zinc-200">
+            {formatProbability(item.epss_probability)}
+          </span>
+        </div>
+
+        <div className="flex justify-between border-b border-border py-1.5">
+          <span className="text-muted-foreground">CISA KEV Catalog:</span>
+          <span>
+            {item.is_known_exploited ? (
+              <span className="flex items-center gap-1 font-semibold text-red-400">
+                <Flame className="size-3.5" />
+                <span>Active Weaponization</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-emerald-400">
+                <CheckCircle className="size-3.5" />
+                <span>Not in KEV</span>
+              </span>
+            )}
+          </span>
+        </div>
+
+        <div className="flex justify-between border-b border-border py-1.5">
+          <span className="text-muted-foreground">Asset Criticality:</span>
+          <span className="font-medium text-zinc-200">{item.asset_criticality}</span>
+        </div>
+
+        <div className="flex justify-between border-b border-border py-1.5">
+          <span className="text-muted-foreground">Perimeter Exposure:</span>
+          <span className="font-medium text-zinc-200">{item.internet_exposure}</span>
+        </div>
+
+        <div className="flex justify-between border-b border-border py-1.5">
+          <span className="text-muted-foreground">Triage Date:</span>
+          <span className="text-zinc-400">{formatDate(item.created_at)}</span>
+        </div>
+
+        <div className="flex justify-between py-1.5">
+          <span className="text-muted-foreground">Assessment ID:</span>
+          <span className="max-w-[150px] truncate font-mono text-[10px] text-zinc-500">
+            {item.id}
+          </span>
+        </div>
+      </div>
+
+      {onSelectForAnalyzer && (
+        <button
+          type="button"
+          onClick={() => onSelectForAnalyzer(item)}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-white/[0.04] py-2 text-xs font-medium text-foreground transition-colors hover:bg-white/[0.08]"
+        >
+          <Cpu className="size-3.5" />
+          <span>Load {item.cve_id} into Analyzer</span>
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#0e172a] border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm sm:p-6">
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
         {/* Modal Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-              <ArrowRightLeft className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-border bg-background/60 p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-border bg-white/[0.04] text-sky-400">
+              <ArrowRightLeft className="size-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white tracking-tight">
+              <h3 className="text-sm font-semibold tracking-tight text-foreground">
                 Assessment Comparison Matrix
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 Side-by-side telemetry differential between two vulnerability assessments
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
           >
-            <X className="w-5 h-5" />
+            <X className="size-4" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Delta Summary Pill */}
-          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
-            <span className="text-slate-400">Risk Score Differential:</span>
-            <span className="font-mono font-bold text-slate-200">
+        <div className="flex-1 space-y-5 overflow-y-auto p-6">
+          <div className="surface-subpanel flex items-center justify-between rounded-xl px-4 py-3 text-xs">
+            <span className="text-muted-foreground">Risk Score Differential:</span>
+            <span className="font-mono font-semibold text-foreground">
               {scoreDiff === 0 ? (
                 'Identical Risk Scores (0 pt delta)'
               ) : scoreDiff > 0 ? (
@@ -64,181 +155,18 @@ export const AssessmentComparisonModal: React.FC<AssessmentComparisonModalProps>
             </span>
           </div>
 
-          {/* Grid Side-by-Side Comparison */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Assessment A Column */}
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Assessment A</span>
-                  <h4 className="text-base font-mono font-bold text-cyan-300">{assessmentA.cve_id}</h4>
-                </div>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${stylesA.badge}`}>
-                  {assessmentA.priority_level}
-                </span>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Deterministic Total Score:</span>
-                  <span className="font-mono font-bold text-white text-sm">{assessmentA.total_score} / 100</span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">CVSS v3.1 Base Score:</span>
-                  <span className="font-mono text-slate-200">
-                    {assessmentA.cvss_base_score !== null ? assessmentA.cvss_base_score.toFixed(1) : 'N/A'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">EPSS Exploit Likelihood:</span>
-                  <span className="font-mono text-slate-200">
-                    {formatProbability(assessmentA.epss_probability)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">CISA KEV Catalog:</span>
-                  <span>
-                    {assessmentA.is_known_exploited ? (
-                      <span className="text-red-400 font-bold flex items-center space-x-1">
-                        <Flame className="w-3.5 h-3.5" />
-                        <span>Active Weaponization</span>
-                      </span>
-                    ) : (
-                      <span className="text-emerald-400 flex items-center space-x-1">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        <span>Not in KEV</span>
-                      </span>
-                    )}
-                  </span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Asset Criticality:</span>
-                  <span className="font-semibold text-slate-200">{assessmentA.asset_criticality}</span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Perimeter Exposure:</span>
-                  <span className="font-semibold text-slate-200">{assessmentA.internet_exposure}</span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Triage Date:</span>
-                  <span className="text-slate-400">{formatDate(assessmentA.created_at)}</span>
-                </div>
-
-                <div className="flex justify-between py-1.5">
-                  <span className="text-slate-400">Assessment ID:</span>
-                  <span className="font-mono text-[10px] text-slate-500 truncate max-w-[150px]">
-                    {assessmentA.id}
-                  </span>
-                </div>
-              </div>
-
-              {onSelectForAnalyzer && (
-                <button
-                  onClick={() => onSelectForAnalyzer(assessmentA)}
-                  className="w-full mt-2 py-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 font-medium text-xs transition-all flex items-center justify-center space-x-1.5"
-                >
-                  <Cpu className="w-3.5 h-3.5" />
-                  <span>Load {assessmentA.cve_id} into Analyzer</span>
-                </button>
-              )}
-            </div>
-
-            {/* Assessment B Column */}
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Assessment B</span>
-                  <h4 className="text-base font-mono font-bold text-cyan-300">{assessmentB.cve_id}</h4>
-                </div>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${stylesB.badge}`}>
-                  {assessmentB.priority_level}
-                </span>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Deterministic Total Score:</span>
-                  <span className="font-mono font-bold text-white text-sm">{assessmentB.total_score} / 100</span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">CVSS v3.1 Base Score:</span>
-                  <span className="font-mono text-slate-200">
-                    {assessmentB.cvss_base_score !== null ? assessmentB.cvss_base_score.toFixed(1) : 'N/A'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">EPSS Exploit Likelihood:</span>
-                  <span className="font-mono text-slate-200">
-                    {formatProbability(assessmentB.epss_probability)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">CISA KEV Catalog:</span>
-                  <span>
-                    {assessmentB.is_known_exploited ? (
-                      <span className="text-red-400 font-bold flex items-center space-x-1">
-                        <Flame className="w-3.5 h-3.5" />
-                        <span>Active Weaponization</span>
-                      </span>
-                    ) : (
-                      <span className="text-emerald-400 flex items-center space-x-1">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        <span>Not in KEV</span>
-                      </span>
-                    )}
-                  </span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Asset Criticality:</span>
-                  <span className="font-semibold text-slate-200">{assessmentB.asset_criticality}</span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Perimeter Exposure:</span>
-                  <span className="font-semibold text-slate-200">{assessmentB.internet_exposure}</span>
-                </div>
-
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Triage Date:</span>
-                  <span className="text-slate-400">{formatDate(assessmentB.created_at)}</span>
-                </div>
-
-                <div className="flex justify-between py-1.5">
-                  <span className="text-slate-400">Assessment ID:</span>
-                  <span className="font-mono text-[10px] text-slate-500 truncate max-w-[150px]">
-                    {assessmentB.id}
-                  </span>
-                </div>
-              </div>
-
-              {onSelectForAnalyzer && (
-                <button
-                  onClick={() => onSelectForAnalyzer(assessmentB)}
-                  className="w-full mt-2 py-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 font-medium text-xs transition-all flex items-center justify-center space-x-1.5"
-                >
-                  <Cpu className="w-3.5 h-3.5" />
-                  <span>Load {assessmentB.cve_id} into Analyzer</span>
-                </button>
-              )}
-            </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {renderColumn('Assessment A', assessmentA, stylesA)}
+            {renderColumn('Assessment B', assessmentB, stylesB)}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/60 flex justify-end">
+        <div className="flex justify-end border-t border-border bg-background/60 p-4">
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all"
+            className="rounded-xl border border-border bg-white/[0.04] px-4 py-2 text-xs font-medium text-foreground transition-colors hover:bg-white/[0.08]"
           >
             Close Matrix
           </button>

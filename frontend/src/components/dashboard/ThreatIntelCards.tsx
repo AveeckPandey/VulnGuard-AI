@@ -11,56 +11,57 @@ export const ThreatIntelCards: React.FC<ThreatIntelCardsProps> = ({ intel }) => 
   const { nvd, epss, cisa_kev } = intel;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {/* 1. NIST NVD Card */}
-      <div className="p-5 rounded-2xl bg-card border border-border flex flex-col justify-between hover:border-slate-700 transition-all shadow-md">
+      <div className="surface-panel flex flex-col justify-between rounded-2xl p-5 transition-colors hover:border-white/[0.14]">
         <div>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               NIST NVD Intelligence
             </span>
             <a
               href={nvd.source_url}
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-sky-400 hover:text-sky-300 flex items-center space-x-1"
+              className="flex items-center gap-1 text-xs text-zinc-300 transition-colors hover:text-foreground"
             >
               <span>NVD 2.0</span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="size-3 text-muted-foreground" />
             </a>
           </div>
 
-          <div className="mt-4 flex items-baseline space-x-3">
-            <span className="text-3xl font-extrabold font-mono text-white">
+          <div className="mt-4 flex flex-wrap items-baseline gap-2.5">
+            <span className="font-mono text-3xl font-semibold text-foreground tabular-nums">
               {nvd.cvss_base_score !== null ? nvd.cvss_base_score.toFixed(1) : 'N/A'}
             </span>
             <span
-              className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+              className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${
                 nvd.cvss_severity === 'CRITICAL'
-                  ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                  ? 'border-red-500/25 bg-red-500/10 text-red-400'
                   : nvd.cvss_severity === 'HIGH'
-                  ? 'bg-orange-500/10 text-orange-400 border-orange-500/30'
+                  ? 'border-orange-500/25 bg-orange-500/10 text-orange-400'
                   : nvd.cvss_severity === 'MEDIUM'
-                  ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
-                  : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                  ? 'border-yellow-500/25 bg-yellow-500/10 text-yellow-400'
+                  : 'border-sky-500/25 bg-sky-500/10 text-sky-400'
               }`}
             >
               {nvd.cvss_severity || 'UNKNOWN'}
             </span>
-            <span className="text-xs text-slate-400">{nvd.cvss_version ? `CVSS v${nvd.cvss_version}` : 'CVSS unavailable'}</span>
+            <span className="text-xs text-muted-foreground">
+              {nvd.cvss_version ? `CVSS v${nvd.cvss_version}` : 'CVSS unavailable'}
+            </span>
           </div>
 
-          <p className="text-xs text-slate-300 mt-3 line-clamp-3 leading-relaxed">
+          <p className="mt-3 line-clamp-3 text-[13.5px] leading-relaxed text-zinc-200">
             {nvd.description || 'No description available from upstream feed.'}
           </p>
 
-          {/* Weaknesses */}
           {nvd.weaknesses.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1">
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {Array.from(new Set(nvd.weaknesses)).map((cwe, idx) => (
                 <span
                   key={`${cwe}-${idx}`}
-                  className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"
+                  className="rounded-md border border-border bg-white/[0.04] px-2 py-0.5 font-mono text-[11px] text-zinc-200"
                 >
                   {cwe}
                 </span>
@@ -69,139 +70,135 @@ export const ThreatIntelCards: React.FC<ThreatIntelCardsProps> = ({ intel }) => 
           )}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
           <span>Vector:</span>
-          <span className="font-mono text-slate-400 truncate max-w-[180px]" title={nvd.cvss_vector_string || 'N/A'}>
+          <span className="max-w-[180px] truncate font-mono text-zinc-300" title={nvd.cvss_vector_string || 'N/A'}>
             {nvd.cvss_vector_string || 'N/A'}
           </span>
         </div>
       </div>
 
       {/* 2. FIRST EPSS Card */}
-      <div className="p-5 rounded-2xl bg-card border border-border flex flex-col justify-between hover:border-slate-700 transition-all shadow-md">
+      <div className="surface-panel flex flex-col justify-between rounded-2xl p-5 transition-colors hover:border-white/[0.14]">
         <div>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               FIRST EPSS Probability
             </span>
             <a
               href={epss.source_url}
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-sky-400 hover:text-sky-300 flex items-center space-x-1"
+              className="flex items-center gap-1 text-xs text-zinc-300 transition-colors hover:text-foreground"
             >
               <span>FIRST.org</span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="size-3 text-muted-foreground" />
             </a>
           </div>
 
-          <div className="mt-4 flex items-baseline space-x-2">
-            <span className="text-3xl font-extrabold font-mono text-white">
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="font-mono text-3xl font-semibold text-foreground tabular-nums">
               {formatProbability(epss.epss_probability)}
             </span>
-            <span className="text-xs text-slate-400">next 30-day exploit likelihood</span>
+            <span className="text-xs text-muted-foreground">next 30-day exploit likelihood</span>
           </div>
 
-          {/* Progress Bar for EPSS */}
-          <div className="mt-3 w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full border border-border bg-white/[0.04]">
             <div
               className={`h-full rounded-full transition-all duration-700 ${
                 (epss.epss_probability || 0) > 0.5
                   ? 'bg-red-500'
                   : (epss.epss_probability || 0) > 0.15
                   ? 'bg-orange-500'
-                  : 'bg-sky-500'
+                  : 'bg-sky-400'
               }`}
               style={{ width: `${Math.min(100, (epss.epss_probability || 0) * 100)}%` }}
             />
           </div>
 
-          {/* Separate Percentile Display */}
-          <div className="mt-4 p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="w-4 h-4 text-sky-400" />
-              <span className="text-xs text-slate-300 font-medium">Percentile Ranking</span>
+          <div className="surface-subpanel mt-4 flex items-center justify-between rounded-xl p-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="size-4 text-sky-400" />
+              <span className="text-xs font-medium text-zinc-300">Percentile Ranking</span>
             </div>
-            <span className="text-xs font-mono font-bold text-sky-300">
+            <span className="font-mono text-xs font-semibold text-foreground">
               {formatPercentile(epss.epss_percentile)}
             </span>
           </div>
         </div>
 
-        <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-[11px] text-muted-foreground">
           <span>Model Date:</span>
-          <span className="text-slate-300 font-mono">{epss.model_date || 'Unknown'}</span>
+          <span className="font-mono text-zinc-300">{epss.model_date || 'Unknown'}</span>
         </div>
       </div>
 
       {/* 3. CISA KEV Card */}
-      <div className="p-5 rounded-2xl bg-card border border-border flex flex-col justify-between hover:border-slate-700 transition-all shadow-md">
+      <div className="surface-panel flex flex-col justify-between rounded-2xl p-5 transition-colors hover:border-white/[0.14]">
         <div>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               CISA KEV Exploitation
             </span>
             <a
               href={cisa_kev.source_url}
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-sky-400 hover:text-sky-300 flex items-center space-x-1"
+              className="flex items-center gap-1 text-xs text-zinc-300 transition-colors hover:text-foreground"
             >
               <span>CISA.gov</span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="size-3 text-muted-foreground" />
             </a>
           </div>
 
-          {/* Status Badge */}
           <div className="mt-4">
             {cisa_kev.is_known_exploited ? (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center space-x-2.5 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse">
-                <Flame className="w-5 h-5 text-red-500 shrink-0" />
+              <div className="flex items-center gap-2.5 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-red-400">
+                <Flame className="size-5 shrink-0 text-red-500" />
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider">Actively Weaponized in Wild</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider">Actively Weaponized in Wild</p>
                   <p className="text-[11px] text-red-300/80">Listed in Federal KEV Catalog</p>
                 </div>
               </div>
             ) : cisa_kev.status === 'CONFIRMED_NEGATIVE' ? (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-2.5">
-                <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+              <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-emerald-400">
+                <CheckCircle className="size-5 shrink-0 text-emerald-500" />
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider">Confirmed Negative</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider">Confirmed Negative</p>
                   <p className="text-[11px] text-emerald-300/80">Not listed in active KEV catalog</p>
                 </div>
               </div>
             ) : (
-              <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 flex items-center space-x-2.5">
-                <HelpCircle className="w-5 h-5 text-slate-400 shrink-0" />
+              <div className="surface-subpanel flex items-center gap-2.5 rounded-xl p-3 text-zinc-300">
+                <HelpCircle className="size-5 shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider">Status Unverified</p>
-                  <p className="text-[11px] text-slate-400">Catalog unreachable or pending sync</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider">Status Unverified</p>
+                  <p className="text-[11px] text-muted-foreground">Catalog unreachable or pending sync</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* KEV Metadata if available */}
           {cisa_kev.is_known_exploited && (
             <div className="mt-3 space-y-1.5 text-xs">
               {cisa_kev.vulnerability_name && (
-                <p className="text-slate-300 font-medium line-clamp-1">
+                <p className="line-clamp-1 font-medium text-foreground">
                   {cisa_kev.vulnerability_name}
                 </p>
               )}
               {cisa_kev.required_action && (
-                <p className="text-slate-400 text-[11px] line-clamp-2">
-                  <strong className="text-slate-300">Mandate:</strong> {cisa_kev.required_action}
+                <p className="line-clamp-2 text-[11px] text-muted-foreground">
+                  <strong className="text-zinc-300">Mandate:</strong> {cisa_kev.required_action}
                 </p>
               )}
               {cisa_kev.known_ransomware_use && (
-                <div className="flex items-center space-x-1.5 text-[11px]">
-                  <span className="text-slate-400">Ransomware Use:</span>
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  <span className="text-muted-foreground">Ransomware Use:</span>
                   <span
                     className={`font-semibold ${
                       cisa_kev.known_ransomware_use.toLowerCase().includes('known')
                         ? 'text-red-400'
-                        : 'text-slate-400'
+                        : 'text-zinc-400'
                     }`}
                   >
                     {cisa_kev.known_ransomware_use}
@@ -212,9 +209,9 @@ export const ThreatIntelCards: React.FC<ThreatIntelCardsProps> = ({ intel }) => 
           )}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-[11px] text-muted-foreground">
           <span>Due Date:</span>
-          <span className="text-slate-300 font-mono">{cisa_kev.due_date || 'N/A'}</span>
+          <span className="font-mono text-zinc-300">{cisa_kev.due_date || 'N/A'}</span>
         </div>
       </div>
     </div>

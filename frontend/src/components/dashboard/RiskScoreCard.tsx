@@ -11,29 +11,23 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({ assessment }) => {
   const { risk_score, id, execution_time_ms, created_at, cve_id } = assessment;
   const styles = getPriorityStyles(risk_score.priority_level);
 
-  // SVG circular gauge calculation
-  const radius = 54;
+  const radius = 52;
   const circumference = 2 * Math.PI * radius;
   const progressOffset = circumference - (risk_score.total_score / 100) * circumference;
 
   return (
-    <div className={`p-6 rounded-2xl bg-card border ${styles.border} shadow-xl relative overflow-hidden`}>
-      {/* Background glow */}
-      <div
-        className={`absolute -top-24 -right-24 w-64 h-64 rounded-full opacity-15 blur-3xl pointer-events-none ${styles.bg}`}
-      />
-
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+    <div className={`surface-panel rounded-2xl p-6 ${styles.border}`}>
+      <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
         {/* Left: Score Gauge & Classification */}
-        <div className="flex items-center space-x-6">
-          <div className="relative flex items-center justify-center shrink-0">
-            <svg className="w-32 h-32 transform -rotate-90">
+        <div className="flex flex-col items-center gap-5 sm:flex-row">
+          <div className="relative flex shrink-0 items-center justify-center">
+            <svg className="size-32 -rotate-90 transform">
               <circle
                 cx="64"
                 cy="64"
                 r={radius}
-                className="text-slate-800"
-                strokeWidth="10"
+                className="text-white/[0.07]"
+                strokeWidth="8"
                 stroke="currentColor"
                 fill="transparent"
               />
@@ -42,7 +36,7 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({ assessment }) => {
                 cy="64"
                 r={radius}
                 stroke="currentColor"
-                strokeWidth="10"
+                strokeWidth="8"
                 strokeDasharray={circumference}
                 strokeDashoffset={progressOffset}
                 strokeLinecap="round"
@@ -51,58 +45,58 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({ assessment }) => {
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center">
-              <span className="text-3xl font-extrabold font-mono text-white tracking-tighter">
+              <span className="font-mono text-3xl font-semibold tracking-tight text-foreground tabular-nums">
                 {risk_score.total_score}
               </span>
-              <span className="text-[10px] text-slate-400 uppercase font-semibold">/ 100</span>
+              <span className="text-[10px] font-medium uppercase text-muted-foreground">/ 100</span>
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center space-x-2.5">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <div className="text-center sm:text-left">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Prioritization Tier
               </span>
               <span
-                className={`text-xs font-extrabold px-3 py-1 rounded-full border tracking-wide uppercase ${styles.badge}`}
+                className={`rounded-md border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${styles.badge}`}
               >
                 {risk_score.priority_level} PRIORITY
               </span>
             </div>
 
-            <h2 className="text-2xl font-black text-white mt-1.5 font-mono">
+            <h2 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-foreground">
               {cve_id}
             </h2>
 
-            <p className="text-xs text-slate-400 mt-1 max-w-md leading-relaxed">
+            <p className="mt-1.5 max-w-lg text-[13.5px] leading-relaxed text-zinc-300">
               {risk_score.summary}
             </p>
           </div>
         </div>
 
         {/* Right: Meta Details */}
-        <div className="w-full md:w-auto flex md:flex-col justify-between items-end gap-2 text-xs text-slate-400 pt-4 md:pt-0 border-t md:border-t-0 border-slate-800/80">
-          <div className="flex items-center space-x-1.5 font-mono">
-            <Hash className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-slate-300 font-semibold">{id}</span>
+        <div className="flex w-full justify-between gap-2 border-t border-border pt-4 text-[13px] text-zinc-300 md:w-auto md:flex-col md:items-end md:border-t-0 md:pt-0">
+          <div className="flex items-center gap-1.5 font-mono">
+            <Hash className="size-3.5 text-zinc-400" />
+            <span className="font-medium text-zinc-200">{id}</span>
           </div>
-          <div className="flex items-center space-x-1.5">
-            <Clock className="w-3.5 h-3.5 text-sky-400" />
-            <span>Triage time: <strong className="text-slate-200">{execution_time_ms} ms</strong></span>
+          <div className="flex items-center gap-1.5">
+            <Clock className="size-3.5 text-zinc-400" />
+            <span>
+              Triage time: <strong className="font-mono text-foreground">{execution_time_ms} ms</strong>
+            </span>
           </div>
-          <div className="text-[11px] text-slate-500">
-            {formatDate(created_at)}
-          </div>
+          <div className="text-xs text-muted-foreground">{formatDate(created_at)}</div>
         </div>
       </div>
 
       {/* Provisional Flag Warning */}
       {risk_score.is_provisional && (
-        <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start space-x-2.5">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-[13px] text-amber-200">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-400" />
           <div>
-            <span className="font-bold">Provisional Assessment Notice:</span>
-            <ul className="list-disc list-inside mt-1 space-y-0.5 text-amber-200/90">
+            <span className="font-semibold">Provisional Assessment Notice:</span>
+            <ul className="mt-1 list-inside list-disc space-y-0.5 text-amber-200/90">
               {risk_score.provisional_reasons.map((r, i) => (
                 <li key={i}>{r}</li>
               ))}
@@ -112,9 +106,9 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({ assessment }) => {
       )}
 
       {/* Formula Disclaimer */}
-      <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
-        <div className="flex items-center space-x-1.5">
-          <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+      <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <Info className="size-3.5 shrink-0 text-zinc-400" />
           <span>{risk_score.formula_disclaimer}</span>
         </div>
       </div>

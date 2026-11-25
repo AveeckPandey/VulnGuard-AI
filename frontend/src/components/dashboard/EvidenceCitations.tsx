@@ -9,17 +9,16 @@ export const EvidenceCitations: React.FC<EvidenceCitationsProps> = ({ citations 
   if (!citations || citations.length === 0) return null;
 
   return (
-    <div className="p-5 rounded-2xl bg-card border border-border shadow-md">
-      <div className="flex items-center space-x-2 mb-3">
-        <BookOpen className="w-4 h-4 text-sky-400" />
-        <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+    <div className="surface-panel rounded-2xl p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <BookOpen className="size-4 text-muted-foreground" />
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
           Evidence Sources & Verifiable Citations
         </h4>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {citations.map((cite, idx) => {
-          // If cite has format "Source: URL" or bare URL
           let label = cite;
           let url = cite;
           if (cite.includes('http')) {
@@ -43,11 +42,11 @@ export const EvidenceCitations: React.FC<EvidenceCitationsProps> = ({ citations 
               href={url.startsWith('http') ? url : undefined}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#0b1120] border border-slate-800 text-slate-300 hover:text-sky-300 hover:border-slate-700 text-xs transition-all"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-white/[0.16] hover:text-foreground"
             >
-              <Shield className="w-3 h-3 text-sky-400 shrink-0" />
-              <span className="font-mono text-[11px] truncate max-w-[240px]">{label}</span>
-              {url.startsWith('http') && <ExternalLink className="w-3 h-3 text-slate-500" />}
+              <Shield className="size-3 shrink-0 text-sky-400" />
+              <span className="max-w-[240px] truncate font-mono text-[11px]">{label}</span>
+              {url.startsWith('http') && <ExternalLink className="size-3 text-muted-foreground" />}
             </a>
           );
         })}

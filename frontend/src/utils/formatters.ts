@@ -31,36 +31,36 @@ export function getPriorityStyles(priority: PriorityLevel) {
   switch (priority) {
     case 'CRITICAL':
       return {
-        badge: 'bg-red-500/10 text-red-400 border-red-500/30',
+        badge: 'bg-red-500/10 text-red-400 border-red-500/25',
         text: 'text-red-400',
-        border: 'border-red-500/30',
+        border: 'border-red-500/25',
         bg: 'bg-red-500',
-        glow: 'shadow-[0_0_20px_rgba(239,68,68,0.25)]',
+        glow: '',
       };
     case 'HIGH':
       return {
-        badge: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+        badge: 'bg-orange-500/10 text-orange-400 border-orange-500/25',
         text: 'text-orange-400',
-        border: 'border-orange-500/30',
+        border: 'border-orange-500/25',
         bg: 'bg-orange-500',
-        glow: 'shadow-[0_0_20px_rgba(249,115,22,0.25)]',
+        glow: '',
       };
     case 'MEDIUM':
       return {
-        badge: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
+        badge: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/25',
         text: 'text-yellow-400',
-        border: 'border-yellow-500/30',
+        border: 'border-yellow-500/25',
         bg: 'bg-yellow-500',
-        glow: 'shadow-[0_0_20px_rgba(234,179,8,0.25)]',
+        glow: '',
       };
     case 'LOW':
     default:
       return {
-        badge: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-        text: 'text-blue-400',
-        border: 'border-blue-500/30',
-        bg: 'bg-blue-500',
-        glow: 'shadow-[0_0_20px_rgba(59,130,246,0.25)]',
+        badge: 'bg-sky-500/10 text-sky-400 border-sky-500/25',
+        text: 'text-sky-400',
+        border: 'border-sky-500/25',
+        bg: 'bg-sky-500',
+        glow: '',
       };
   }
 }

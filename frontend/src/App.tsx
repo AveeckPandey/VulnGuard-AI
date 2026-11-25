@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import ElectricLogo from '@/components/ui/ElectricLogo';
 import { Header } from './components/layout/Header';
+import { Footer } from './components/layout/Footer';
 import { Sidebar, TabType } from './components/layout/Sidebar';
 import { OverviewView } from './components/dashboard/OverviewView';
 import { MyWorkspaceView } from './components/dashboard/MyWorkspaceView';
@@ -60,8 +63,10 @@ export function App() {
   useEffect(() => {
     if (window.location.pathname !== '/callback') return;
     completeCognitoLogin()
-      .then(session => { if (session) setAuthState(authManager.getInitialState()); })
-      .catch(err => setErrorMessage(err instanceof Error ? err.message : 'Sign-in failed.'));
+      .then((session) => {
+        if (session) setAuthState(authManager.getInitialState());
+      })
+      .catch((err) => setErrorMessage(err instanceof Error ? err.message : 'Sign-in failed.'));
   }, []);
 
   const fetchSystemStatus = useCallback(async () => {
@@ -129,7 +134,6 @@ export function App() {
       const result = await apiClient.analyzeVulnerability(request);
       if (requestToken !== authManager.getAccessToken()) return;
       setCurrentAssessment(result);
-      // Refresh history & workspace summary from DynamoDB
       loadHistory();
       loadWorkspace();
     } catch (error) {
@@ -161,6 +165,13 @@ export function App() {
     setExposure(expo);
     setSystemContext(ctx);
     setActiveTab('analyzer');
+    handleAnalyze({
+      cve_id: cveId,
+      asset_criticality: crit,
+      internet_exposure: expo,
+      system_context: ctx,
+      simulate_offline: !isLiveMode,
+    });
   };
 
   const handleSelectAssessment = async (id: string) => {
@@ -212,212 +223,266 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080d19] text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-white">
-      {/* Top Header */}
-      <Header
-        activeTab={activeTab}
-        isLiveMode={isLiveMode}
-        setIsLiveMode={setIsLiveMode}
-        systemHealth={systemHealth?.status}
-        intelFeeds={intelFeeds}
-        onRefresh={handleRefreshAll}
-        isRefreshing={isRefreshing}
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-        user={authState.user}
-        onOpenAuthModal={() => setAuthModalOpen(true)}
-        onSignOut={handleSignOut}
-      />
+    <div className="relative flex min-h-screen bg-background text-foreground lg:h-screen lg:overflow-hidden">
+      {/* Ambient App Background */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0 opacity-20"
+      >
+        <ElectricLogo
+          src="/logo.svg"
+          color="#bae6fd"
+          glowColor="#0284c7"
+          scale={0.65}
+          strands={4}
+          bend={0.5}
+          crackle={1.2}
+          arcs={1}
+          speed={1.8}
+          interactive={false}
+          intensity={1.0}
+          glow={1.2}
+          flicker={0.35}
+          theme="dark"
+        />
+      </div>
 
-      {/* Backend Connectivity Warning Banner if Unreachable */}
-      {systemHealth?.status === 'unreachable' && (
-        <div className="bg-red-500/10 border-b border-red-500/30 px-4 py-2 text-xs text-red-400 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <WifiOff className="w-4 h-4 text-red-400 shrink-0" />
-            <span>
-              <strong>Backend Disconnected:</strong> Cannot reach API backend ({getResolvedApiEndpointDisplay()}). Ensure the backend server is running.
-            </span>
-          </div>
-          <button
-            onClick={fetchSystemStatus}
-            className="text-white bg-red-500/20 px-2 py-0.5 rounded hover:bg-red-500/30 text-[11px]"
-          >
-            Retry Connection
-          </button>
-        </div>
-      )}
+      {/* Desktop Collapsible Sidebar */}
+      <div className="relative z-10 hidden h-full shrink-0 lg:flex">
+        <Sidebar
+          variant="collapsible"
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onSelectPresetCve={handleSelectPresetCve}
+          historyCount={history.length}
+          user={authState.user}
+          onOpenAuthModal={() => setAuthModalOpen(true)}
+        />
+      </div>
 
-      {/* Main Layout Body */}
-      <div className="flex-1 flex flex-col lg:flex-row relative">
-        {/* Mobile Slide-Out Backdrop */}
+      {/* Mobile Slide-Over Sidebar Drawer */}
+      <AnimatePresence>
         {mobileMenuOpen && (
-          <div
-            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-            onClick={() => setMobileMenuOpen(false)}
-          />
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+              className="fixed inset-y-0 left-0 z-50 flex h-full lg:hidden"
+            >
+              <Sidebar
+                variant="default"
+                activeTab={activeTab}
+                setActiveTab={(tab) => {
+                  setActiveTab(tab);
+                  setMobileMenuOpen(false);
+                }}
+                onSelectPresetCve={(cve, crit, expo, ctx) => {
+                  handleSelectPresetCve(cve, crit, expo, ctx);
+                  setMobileMenuOpen(false);
+                }}
+                historyCount={history.length}
+                user={authState.user}
+                onOpenAuthModal={() => {
+                  setMobileMenuOpen(false);
+                  setAuthModalOpen(true);
+                }}
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content Shell */}
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col lg:h-full lg:overflow-hidden">
+        <Header
+          activeTab={activeTab}
+          isLiveMode={isLiveMode}
+          setIsLiveMode={setIsLiveMode}
+          systemHealth={systemHealth?.status}
+          intelFeeds={intelFeeds}
+          onRefresh={handleRefreshAll}
+          isRefreshing={isRefreshing}
+          mobileMenuOpen={mobileMenuOpen}
+          setMobileMenuOpen={setMobileMenuOpen}
+          user={authState.user}
+          onOpenAuthModal={() => setAuthModalOpen(true)}
+          onSignOut={handleSignOut}
+        />
+
+        {/* Backend Connectivity Warning Banner if Unreachable */}
+        {systemHealth?.status === 'unreachable' && (
+          <div className="flex items-center justify-between gap-3 border-b border-red-500/25 bg-red-500/10 px-4 py-2 text-xs text-red-400 sm:px-6">
+            <div className="flex items-center gap-2">
+              <WifiOff className="size-4 shrink-0 text-red-400" />
+              <span>
+                <strong>Backend Disconnected:</strong> Cannot reach API backend ({getResolvedApiEndpointDisplay()}). Ensure the backend server is running.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={fetchSystemStatus}
+              className="shrink-0 rounded-md bg-red-500/20 px-2.5 py-1 text-[11px] font-medium text-white transition-colors hover:bg-red-500/30"
+            >
+              Retry Connection
+            </button>
+          </div>
         )}
 
-        {/* Left Sidebar (Desktop fixed + Mobile slide-over) */}
-        <div
-          className={`fixed lg:static top-16 bottom-0 left-0 z-40 w-64 transform transition-transform duration-200 ease-in-out lg:transform-none ${
-            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          }`}
-        >
-          <Sidebar
-            activeTab={activeTab}
-            setActiveTab={(tab) => {
-              setActiveTab(tab);
-              setMobileMenuOpen(false);
-            }}
-            onSelectPresetCve={handleSelectPresetCve}
-            historyCount={history.length}
-            user={authState.user}
-            onOpenAuthModal={() => setAuthModalOpen(true)}
-          />
-        </div>
-
-        {/* Center / Main Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
-          {/* Error Banner */}
-          {errorMessage && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-                <span>{errorMessage}</span>
+        {/* Scrollable Workspace Pane */}
+        <main className="flex flex-1 flex-col overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1360px] flex-1 space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+            {/* Error Banner */}
+            {errorMessage && (
+              <div className="flex flex-col items-start justify-between gap-3 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-xs text-red-300 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-2.5">
+                  <AlertCircle className="size-4 shrink-0 text-red-400" />
+                  <span>{errorMessage}</span>
+                </div>
+                <div className="ml-auto flex shrink-0 items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAuthModalOpen(true)}
+                    className="rounded-lg bg-red-500/20 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-red-500/30"
+                  >
+                    Manage Auth
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setErrorMessage(null)}
+                    className="text-xs text-red-400 underline hover:text-white"
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center space-x-3 shrink-0 ml-auto">
-                <button
-                  onClick={() => setAuthModalOpen(true)}
-                  className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-white font-medium text-xs transition-all"
-                >
-                  Manage Auth
-                </button>
-                <button
-                  onClick={() => setErrorMessage(null)}
-                  className="text-red-400 hover:text-white text-xs underline"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* TAB 1: OVERVIEW DASHBOARD */}
-          {activeTab === 'overview' && (
-            <div className="space-y-6">
-              <LandingHero
+            {/* TAB 1: OVERVIEW DASHBOARD */}
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                <LandingHero
+                  onNavigateToAnalyzer={() => setActiveTab('analyzer')}
+                  onSelectPreset={handleSelectPresetCve}
+                  onOpenAuthModal={() => setAuthModalOpen(true)}
+                  isAuthenticated={authState.isAuthenticated}
+                />
+
+                <OverviewView
+                  history={history}
+                  onSelectAssessment={handleSelectAssessment}
+                  onNavigateToAnalyzer={() => setActiveTab('analyzer')}
+                />
+              </div>
+            )}
+
+            {/* TAB 2: MY WORKSPACE */}
+            {activeTab === 'workspace' && (
+              <MyWorkspaceView
+                user={authState.user}
+                workspace={userWorkspace}
+                intelFeeds={intelFeeds}
                 onNavigateToAnalyzer={() => setActiveTab('analyzer')}
+                onSelectAssessment={handleSelectAssessment}
                 onSelectPreset={handleSelectPresetCve}
                 onOpenAuthModal={() => setAuthModalOpen(true)}
-                isAuthenticated={authState.isAuthenticated}
               />
+            )}
 
-              <OverviewView
+            {/* TAB 3: CVE ANALYZER */}
+            {activeTab === 'analyzer' && (
+              <div className="space-y-6">
+                <CveSearchBar
+                  onAnalyze={handleAnalyze}
+                  isLoading={isLoading}
+                  isLiveMode={isLiveMode}
+                  selectedCve={selectedCve}
+                  setSelectedCve={setSelectedCve}
+                  criticality={criticality}
+                  setCriticality={setCriticality}
+                  exposure={exposure}
+                  setExposure={setExposure}
+                  systemContext={systemContext}
+                  setSystemContext={setSystemContext}
+                />
+
+                {currentAssessment ? (
+                  <div className="space-y-6">
+                    <RiskScoreCard assessment={currentAssessment} />
+                    <ThreatIntelCards intel={currentAssessment.intelligence} />
+                    <FactorBreakdownChart
+                      components={currentAssessment.risk_score.components}
+                      totalScore={currentAssessment.risk_score.total_score}
+                    />
+                    <AiRemediationPanel
+                      remediation={currentAssessment.remediation}
+                      cveId={currentAssessment.cve_id}
+                    />
+                    <EvidenceCitations
+                      citations={currentAssessment.remediation.evidence_citations}
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-card/50 py-20 text-center">
+                    <Shield className="mx-auto mb-3 size-10 text-zinc-700" />
+                    <p className="text-sm font-semibold text-foreground">No Assessment Loaded</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Enter a CVE identifier above and click "Analyze Vulnerability" to generate a prioritized risk report and remediation plan.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 4: ASSESSMENT HISTORY */}
+            {activeTab === 'history' && (
+              <AssessmentHistoryTable
                 history={history}
                 onSelectAssessment={handleSelectAssessment}
-                onNavigateToAnalyzer={() => setActiveTab('analyzer')}
+                onRefresh={loadHistory}
+                isLoading={isRefreshing}
+                onLoadIntoAnalyzer={handleLoadIntoAnalyzer}
               />
-            </div>
-          )}
+            )}
 
-          {/* TAB 2: MY WORKSPACE (PERSONAL TRIAGE TELEMETRY) */}
-          {activeTab === 'workspace' && (
-            <MyWorkspaceView
-              user={authState.user}
-              workspace={userWorkspace}
-              intelFeeds={intelFeeds}
-              onNavigateToAnalyzer={() => setActiveTab('analyzer')}
-              onSelectAssessment={handleSelectAssessment}
-              onSelectPreset={handleSelectPresetCve}
-              onOpenAuthModal={() => setAuthModalOpen(true)}
-            />
-          )}
+            {/* TAB 5: DEEP ANALYTICS */}
+            {activeTab === 'analytics' && <AnalyticsDashboard history={history} />}
 
-          {/* TAB 3: CVE ANALYZER (PRIMARY FEATURE) */}
-          {activeTab === 'analyzer' && (
-            <div className="space-y-6">
-              {/* CVE Search & Environmental Context Form */}
-              <CveSearchBar
-                onAnalyze={handleAnalyze}
-                isLoading={isLoading}
+            {/* TAB 6: WORKSPACE & FEED SETTINGS */}
+            {activeTab === 'settings' && (
+              <SettingsPanel
+                systemHealth={systemHealth}
+                intelFeeds={intelFeeds}
+                onRefresh={handleRefreshAll}
+                isRefreshing={isRefreshing}
+                user={authState.user}
                 isLiveMode={isLiveMode}
-                selectedCve={selectedCve}
-                setSelectedCve={setSelectedCve}
-                criticality={criticality}
-                setCriticality={setCriticality}
-                exposure={exposure}
-                setExposure={setExposure}
-                systemContext={systemContext}
-                setSystemContext={setSystemContext}
+                setIsLiveMode={setIsLiveMode}
+                onOpenAuthModal={() => setAuthModalOpen(true)}
+                onSignOut={handleSignOut}
               />
+            )}
+          </div>
 
-              {/* Assessment Results Section */}
-              {currentAssessment ? (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  {/* Risk Score Summary Banner */}
-                  <RiskScoreCard assessment={currentAssessment} />
-
-                  {/* 3 Real Threat Intel Cards (NVD, EPSS, CISA KEV) */}
-                  <ThreatIntelCards intel={currentAssessment.intelligence} />
-
-                  {/* Factor Breakdown Chart */}
-                  <FactorBreakdownChart
-                    components={currentAssessment.risk_score.components}
-                    totalScore={currentAssessment.risk_score.total_score}
-                  />
-
-                  {/* NVIDIA Nemotron AI Remediation Panel */}
-                  <AiRemediationPanel
-                    remediation={currentAssessment.remediation}
-                    cveId={currentAssessment.cve_id}
-                  />
-
-                  {/* Verifiable Source Citations */}
-                  <EvidenceCitations
-                    citations={currentAssessment.remediation.evidence_citations}
-                  />
-                </div>
-              ) : (
-                <div className="py-20 text-center text-slate-500">
-                  <Shield className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-                  <p className="text-sm font-semibold text-slate-300">No Assessment Loaded</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Enter a CVE identifier above and click "Analyze Vulnerability" to execute the LangGraph pipeline.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 4: ASSESSMENT HISTORY */}
-          {activeTab === 'history' && (
-            <AssessmentHistoryTable
-              history={history}
-              onSelectAssessment={handleSelectAssessment}
-              onRefresh={loadHistory}
-              isLoading={isRefreshing}
-              onLoadIntoAnalyzer={handleLoadIntoAnalyzer}
-            />
-          )}
-
-          {/* TAB 5: DEEP ANALYTICS */}
-          {activeTab === 'analytics' && (
-            <AnalyticsDashboard history={history} />
-          )}
-
-          {/* TAB 6: SYSTEM & CLOUD SETTINGS */}
-          {activeTab === 'settings' && (
-            <SettingsPanel
-              systemHealth={systemHealth}
-              intelFeeds={intelFeeds}
-              onRefresh={handleRefreshAll}
-              isRefreshing={isRefreshing}
-            />
-          )}
+          {/* Global Full-Bleed Workspace Footer */}
+          <Footer
+            user={authState.user}
+            onNavigate={setActiveTab}
+            onOpenAuthModal={() => setAuthModalOpen(true)}
+          />
         </main>
       </div>
 
-      {/* Detailed Modal View when inspecting any assessment from History or Overview */}
+      {/* Detailed Modal View */}
       {detailedAssessment && (
         <AssessmentDetailModal
           assessment={detailedAssessment}

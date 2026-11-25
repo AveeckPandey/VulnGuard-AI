@@ -45,55 +45,55 @@ export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
   const kevStatus = intelFeeds?.feeds?.cisa_kev?.status || 'operational';
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-5">
       {/* Workspace Header / Identity Card */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-indigo-950/40 border border-slate-800 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div className="space-y-1.5">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300">
-                <UserCheck className="w-5 h-5" />
+      <div className="surface-panel rounded-2xl p-6">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-xl border border-border bg-white/[0.04] text-foreground">
+                <UserCheck className="size-4" />
               </div>
               <div>
-                <div className="flex items-center space-x-2">
-                  <h2 className="text-lg font-bold text-white tracking-tight">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-semibold tracking-tight text-foreground">
                     {user ? `${user.name || user.username}'s Personal Workspace` : 'Guest Security Workspace'}
                   </h2>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                  <span className="rounded-md border border-border bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                     {user ? (user.isDemo ? 'Demo Persona' : 'Cognito User') : 'Unauthenticated'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">
-                  Tenant ID (sub): <span className="text-slate-300">{user?.sub || 'anonymous-session'}</span>
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                  Tenant ID (sub): <span className="text-zinc-200">{user?.sub || 'anonymous-session'}</span>
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 text-xs text-slate-400 pt-1">
-              <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Lock className="size-3.5 shrink-0 text-emerald-400" />
               <span>
-                Isolated Workspace: Records are indexed under your partition key in DynamoDB UserHistoryIndex. Zero cross-user visibility.
+                Isolated Workspace: Your triage records are scoped privately to your account with zero cross-user visibility.
               </span>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 shrink-0">
+          <div className="flex shrink-0 items-center">
             {isAnonymous ? (
               <button
+                type="button"
                 onClick={onOpenAuthModal}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-xs shadow-md shadow-sky-500/20 flex items-center space-x-2 transition-all"
+                className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
-                <Lock className="w-3.5 h-3.5" />
+                <Lock className="size-3.5" />
                 <span>Sign In to Save Assessments</span>
               </button>
             ) : (
               <button
+                type="button"
                 onClick={onNavigateToAnalyzer}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-xs shadow-md shadow-sky-500/20 flex items-center space-x-2 transition-all active:scale-[0.98]"
+                className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
-                <PlusCircle className="w-4 h-4" />
+                <PlusCircle className="size-3.5" />
                 <span>New CVE Assessment</span>
               </button>
             )}
@@ -102,119 +102,121 @@ export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
       </div>
 
       {/* Metric Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-card border border-border">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-              <span className="text-xs font-medium">Recent Triages</span>
-            <Layers className="w-4 h-4 text-cyan-400" />
+      <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
+        <div className="surface-panel rounded-2xl p-4">
+          <div className="mb-1 flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-medium">Recent Triages</span>
+            <Layers className="size-4 text-zinc-400" />
           </div>
-          <div className="text-2xl font-mono font-bold text-white">{total}</div>
-            <p className="text-[11px] text-slate-500 mt-1">Up to 100 recent assessments in your workspace</p>
+          <div className="font-mono text-2xl font-semibold text-foreground tabular-nums">{total}</div>
+          <p className="mt-1 text-[11px] text-zinc-500">Up to 100 recent assessments in your workspace</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-card border border-border">
-          <div className="flex items-center justify-between text-red-400 mb-1">
+        <div className="surface-panel rounded-2xl p-4">
+          <div className="mb-1 flex items-center justify-between text-red-400">
             <span className="text-xs font-medium">Critical Risk (≥85)</span>
-            <Flame className="w-4 h-4 text-red-400" />
+            <Flame className="size-4 text-red-400" />
           </div>
-          <div className="text-2xl font-mono font-bold text-red-400">{dist.CRITICAL}</div>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <div className="font-mono text-2xl font-semibold text-red-400 tabular-nums">{dist.CRITICAL}</div>
+          <p className="mt-1 text-[11px] text-zinc-500">
             {total > 0 ? `${((dist.CRITICAL / total) * 100).toFixed(0)}% of your triage` : '0% of total'}
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-card border border-border">
-          <div className="flex items-center justify-between text-orange-400 mb-1">
+        <div className="surface-panel rounded-2xl p-4">
+          <div className="mb-1 flex items-center justify-between text-orange-400">
             <span className="text-xs font-medium">High Risk (70–84)</span>
-            <AlertTriangle className="w-4 h-4 text-orange-400" />
+            <AlertTriangle className="size-4 text-orange-400" />
           </div>
-          <div className="text-2xl font-mono font-bold text-orange-400">{dist.HIGH}</div>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <div className="font-mono text-2xl font-semibold text-orange-400 tabular-nums">{dist.HIGH}</div>
+          <p className="mt-1 text-[11px] text-zinc-500">
             {total > 0 ? `${((dist.HIGH / total) * 100).toFixed(0)}% of your triage` : '0% of total'}
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-card border border-border">
-          <div className="flex items-center justify-between text-yellow-400 mb-1">
+        <div className="surface-panel rounded-2xl p-4">
+          <div className="mb-1 flex items-center justify-between text-yellow-400">
             <span className="text-xs font-medium">Med & Low (0–69)</span>
-            <Shield className="w-4 h-4 text-yellow-400" />
+            <Shield className="size-4 text-yellow-400" />
           </div>
-          <div className="text-2xl font-mono font-bold text-yellow-400">{dist.MEDIUM + dist.LOW}</div>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <div className="font-mono text-2xl font-semibold text-yellow-400 tabular-nums">{dist.MEDIUM + dist.LOW}</div>
+          <p className="mt-1 text-[11px] text-zinc-500">
             {dist.MEDIUM} Medium, {dist.LOW} Low
           </p>
         </div>
       </div>
 
       {/* Threat Feed Health & Pipeline Telemetry */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-card border border-border flex items-center justify-between">
+      <div className="grid grid-cols-1 gap-3.5 md:grid-cols-3">
+        <div className="surface-panel flex items-center justify-between rounded-2xl p-4">
           <div>
-            <div className="text-xs font-semibold text-slate-300">NIST NVD 2.0 API</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">CVSS v3.1 vector & severity metrics</div>
+            <div className="text-xs font-semibold text-foreground">NIST NVD 2.0 API</div>
+            <div className="mt-0.5 text-[11px] text-zinc-500">CVSS v3.1 vector & severity metrics</div>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+          <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] font-medium text-emerald-400">
             {nvdStatus}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-card border border-border flex items-center justify-between">
+        <div className="surface-panel flex items-center justify-between rounded-2xl p-4">
           <div>
-            <div className="text-xs font-semibold text-slate-300">FIRST.Org EPSS v3</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">Empirical exploit likelihood probability</div>
+            <div className="text-xs font-semibold text-foreground">FIRST.Org EPSS v3</div>
+            <div className="mt-0.5 text-[11px] text-zinc-500">Empirical exploit likelihood probability</div>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+          <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] font-medium text-emerald-400">
             {epssStatus}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-card border border-border flex items-center justify-between">
+        <div className="surface-panel flex items-center justify-between rounded-2xl p-4">
           <div>
-            <div className="text-xs font-semibold text-slate-300">CISA KEV Catalog</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">{kevCount} weaponized CVEs tracked</div>
+            <div className="text-xs font-semibold text-foreground">CISA KEV Catalog</div>
+            <div className="mt-0.5 text-[11px] text-zinc-500">{kevCount} weaponized CVEs tracked</div>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+          <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] font-medium text-emerald-400">
             {kevStatus}
           </span>
         </div>
       </div>
 
       {/* Recent Personal Assessments Table */}
-      <div className="p-5 rounded-2xl bg-card border border-border shadow-lg space-y-4">
+      <div className="surface-panel space-y-4 rounded-2xl p-5">
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <Database className="w-4 h-4 text-cyan-400" />
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Database className="size-4 text-muted-foreground" />
               <span>My Recent Assessments</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               Vulnerabilities analyzed and saved under your user account
             </p>
           </div>
           {recent.length > 0 && (
             <button
+              type="button"
               onClick={onNavigateToAnalyzer}
-              className="text-xs font-medium text-cyan-400 hover:text-cyan-300 flex items-center space-x-1"
+              className="flex items-center gap-1 text-xs font-medium text-zinc-300 transition-colors hover:text-foreground"
             >
               <span>Launch Analyzer</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="size-3.5" />
             </button>
           )}
         </div>
 
         {recent.length === 0 ? (
-          <div className="py-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center mx-auto text-slate-500">
-              <Shield className="w-6 h-6" />
+          <div className="space-y-3 py-12 text-center">
+            <div className="mx-auto flex size-11 items-center justify-center rounded-xl border border-border bg-white/[0.03] text-muted-foreground">
+              <Shield className="size-5" />
             </div>
             <div className="space-y-1">
-              <h4 className="text-sm font-semibold text-slate-200">No assessments in your workspace yet</h4>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Run your first vulnerability triage with our multi-factor scoring model and NVIDIA Nemotron AI remediation.
+              <h4 className="text-sm font-semibold text-foreground">No assessments in your workspace yet</h4>
+              <p className="mx-auto max-w-md text-xs text-muted-foreground">
+                Run your first vulnerability triage with our multi-factor scoring model and evidence-grounded AI remediation.
               </p>
             </div>
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
               <button
+                type="button"
                 onClick={() =>
                   onSelectPreset(
                     'CVE-2021-44228',
@@ -223,12 +225,13 @@ export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
                     'Public Edge API Gateway with Log4j 2.14.0'
                   )
                 }
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition-all flex items-center space-x-1.5"
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-200 transition-colors hover:bg-white/[0.06]"
               >
-                <Flame className="w-3.5 h-3.5 text-red-400" />
+                <Flame className="size-3.5 text-red-400" />
                 <span>Test Log4Shell (CVE-2021-44228)</span>
               </button>
               <button
+                type="button"
                 onClick={() =>
                   onSelectPreset(
                     'CVE-2024-3094',
@@ -237,73 +240,74 @@ export const MyWorkspaceView: React.FC<MyWorkspaceViewProps> = ({
                     'Linux Production SSH Build Servers'
                   )
                 }
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition-all flex items-center space-x-1.5"
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-200 transition-colors hover:bg-white/[0.06]"
               >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <Sparkles className="size-3.5 text-sky-400" />
                 <span>Test XZ Utils (CVE-2024-3094)</span>
               </button>
             </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full border-collapse text-left text-[13px]">
               <thead>
-                <tr className="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  <th className="py-2.5 px-3">CVE Identifier</th>
-                  <th className="py-2.5 px-3">Priority</th>
-                  <th className="py-2.5 px-3">Risk Score</th>
-                  <th className="py-2.5 px-3">CVSS</th>
-                  <th className="py-2.5 px-3">EPSS</th>
-                  <th className="py-2.5 px-3">Environment Context</th>
-                  <th className="py-2.5 px-3">Triage Date</th>
-                  <th className="py-2.5 px-3 text-right">Action</th>
+                <tr className="border-b border-border text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-3">CVE Identifier</th>
+                  <th className="px-3 py-3">Priority</th>
+                  <th className="px-3 py-3">Risk Score</th>
+                  <th className="px-3 py-3">CVSS</th>
+                  <th className="px-3 py-3">EPSS</th>
+                  <th className="px-3 py-3">Environment Context</th>
+                  <th className="px-3 py-3">Triage Date</th>
+                  <th className="px-3 py-3 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-sans">
+              <tbody className="divide-y divide-white/[0.07] font-sans">
                 {recent.map((item) => {
                   const styles = getPriorityStyles(item.priority_level);
                   return (
                     <tr
                       key={item.id}
-                      className="hover:bg-slate-800/30 transition-colors group cursor-pointer"
+                      className="group cursor-pointer transition-colors hover:bg-white/[0.04]"
                       onClick={() => onSelectAssessment(item.id)}
                     >
-                      <td className="py-3 px-3 font-mono font-bold text-slate-200 group-hover:text-cyan-300">
+                      <td className="px-3 py-3.5 font-mono font-semibold text-foreground group-hover:text-sky-400">
                         {item.cve_id}
                       </td>
-                      <td className="py-3 px-3">
-                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${styles.badge}`}>
+                      <td className="px-3 py-3.5">
+                        <span className={`rounded-md border px-2.5 py-0.5 text-[11px] font-semibold ${styles.badge}`}>
                           {item.priority_level}
                         </span>
                       </td>
-                      <td className="py-3 px-3 font-mono font-bold text-white">
+                      <td className="px-3 py-3.5 font-mono font-semibold text-foreground">
                         {item.total_score}
-                        <span className="text-[10px] text-slate-400 font-normal">/100</span>
+                        <span className="text-[11px] font-normal text-muted-foreground">/100</span>
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-300">
+                      <td className="px-3 py-3.5 font-mono text-zinc-200">
                         {item.cvss_base_score !== null ? item.cvss_base_score.toFixed(1) : 'N/A'}
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-300">
+                      <td className="px-3 py-3.5 font-mono text-zinc-200">
                         {formatProbability(item.epss_probability)}
                       </td>
-                      <td className="py-3 px-3 text-slate-400">
-                        <span className="font-semibold text-slate-300">{item.asset_criticality}</span>
-                        <span className="text-slate-400 mx-1">/</span>
-                        <span className="text-[11px]">{item.internet_exposure}</span>
+                      <td className="px-3 py-3.5 text-zinc-300">
+                        <span className="font-medium text-foreground">{item.asset_criticality}</span>
+                        <span className="mx-1 text-zinc-500">/</span>
+                        <span className="text-xs">{item.internet_exposure}</span>
                       </td>
-                      <td className="py-3 px-3 text-slate-400 whitespace-nowrap text-[11px]">
+                      <td className="whitespace-nowrap px-3 py-3.5 text-xs text-zinc-300">
                         {formatDate(item.created_at)}
                       </td>
-                      <td className="py-3 px-3 text-right">
+                      <td className="px-3 py-3.5 text-right">
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectAssessment(item.id);
                           }}
-                          className="p-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 transition-all"
+                          className="rounded-lg border border-border bg-white/[0.04] p-1.5 text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-foreground"
                           title="Inspect Assessment"
                         >
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          <ArrowRight className="size-3.5" />
                         </button>
                       </td>
                     </tr>

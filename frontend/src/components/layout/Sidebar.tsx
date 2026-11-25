@@ -9,10 +9,21 @@ import {
   Flame,
   ShieldAlert,
   AlertTriangle,
-  Database,
-  Cpu,
+  Shield,
   Lock,
 } from 'lucide-react';
+import {
+  Sidebar as PrimitiveSidebar,
+  SidebarHeader,
+  SidebarNav,
+  SidebarSection,
+  SidebarItem,
+  SidebarNested,
+  SidebarFooter,
+  SidebarToggle,
+  SidebarVariant,
+  useSidebar,
+} from '@/components/ui/sidebar';
 import { UserProfile } from '../../types/auth';
 
 export type TabType = 'overview' | 'workspace' | 'analyzer' | 'history' | 'analytics' | 'settings';
@@ -24,6 +35,102 @@ interface SidebarProps {
   historyCount: number;
   user: UserProfile | null;
   onOpenAuthModal: () => void;
+  variant?: SidebarVariant;
+}
+
+function CountBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-md bg-[color-mix(in_srgb,var(--foreground)_7%,transparent)] px-1.5 py-0.5 text-[10.5px] font-medium leading-none text-[var(--muted-foreground)] tabular-nums">
+      {children}
+    </span>
+  );
+}
+
+function StatusBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium leading-none text-emerald-400">
+      {children}
+    </span>
+  );
+}
+
+function WorkspaceMark() {
+  const { collapsed } = useSidebar();
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex size-6 shrink-0 items-center justify-center rounded-[7px] bg-[color:var(--color-brand,var(--primary))] text-[color:var(--color-brand-foreground,var(--primary-foreground))]">
+        <Shield className="size-3.5" strokeWidth={2.25} />
+      </div>
+      {!collapsed && (
+        <span className="truncate text-[13.5px] font-semibold leading-none tracking-tight text-foreground">
+          VulnGuard AI
+        </span>
+      )}
+    </div>
+  );
+}
+
+function UserFooter({
+  user,
+  onOpenAuthModal,
+}: {
+  user: UserProfile | null;
+  onOpenAuthModal: () => void;
+}) {
+  const { collapsed } = useSidebar();
+
+  if (user) {
+    return (
+      <button
+        type="button"
+        onClick={onOpenAuthModal}
+        title={collapsed ? `${user.name || user.username} (${user.sub})` : 'Switch Persona / Auth'}
+        className="flex w-full min-w-0 items-center gap-2.5 rounded-lg text-left transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-zinc-950">
+          {(user.name || user.username).charAt(0).toUpperCase()}
+        </div>
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="truncate text-[12.5px] font-medium leading-tight text-foreground">
+                {user.name || user.username}
+              </span>
+              <span className="shrink-0 rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-[9.5px] text-muted-foreground">
+                {user.isDemo ? 'Demo' : 'Cognito'}
+              </span>
+            </div>
+            <div className="truncate font-mono text-[10.5px] leading-tight text-muted-foreground">
+              {user.sub}
+            </div>
+          </div>
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onOpenAuthModal}
+      title={collapsed ? 'Guest Mode — Sign In / Switch' : undefined}
+      className="flex w-full min-w-0 items-center gap-2.5 rounded-lg text-left transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="flex size-6 shrink-0 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.04] text-muted-foreground">
+        <Lock className="size-3" />
+      </div>
+      {!collapsed && (
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[12.5px] font-medium leading-tight text-foreground">
+            Guest Mode
+          </div>
+          <div className="truncate text-[11px] leading-tight text-muted-foreground">
+            Sign In / Switch
+          </div>
+        </div>
+      )}
+    </button>
+  );
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -33,11 +140,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   historyCount,
   user,
   onOpenAuthModal,
+  variant = 'collapsible',
 }) => {
   const presets = [
     {
       cve: 'CVE-2021-44228',
-      name: 'Log4Shell (RCE)',
+      name: 'Log4Shell',
       icon: Flame,
       color: 'text-red-400',
       criticality: 'CRITICAL',
@@ -46,7 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       cve: 'CVE-2023-34362',
-      name: 'MOVEit SQL Injection',
+      name: 'MOVEit',
       icon: ShieldAlert,
       color: 'text-orange-400',
       criticality: 'HIGH',
@@ -55,7 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       cve: 'CVE-2024-3094',
-      name: 'XZ Utils Backdoor',
+      name: 'XZ Utils',
       icon: AlertTriangle,
       color: 'text-amber-400',
       criticality: 'CRITICAL',
@@ -64,133 +172,100 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  const navItems = [
-    { id: 'overview' as TabType, label: 'Overview', icon: LayoutDashboard },
-    { id: 'workspace' as TabType, label: 'My Workspace', icon: UserCheck, badge: user ? 'Active' : undefined },
-    { id: 'analyzer' as TabType, label: 'CVE Analyzer', icon: Crosshair },
-    { id: 'history' as TabType, label: 'Assessment History', icon: History, count: historyCount },
-    { id: 'analytics' as TabType, label: 'Analytics', icon: BarChart3 },
-    { id: 'settings' as TabType, label: 'Settings', icon: Settings },
+  const navItems: Array<{
+    id: TabType;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    badge?: React.ReactNode;
+  }> = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    {
+      id: 'workspace',
+      label: 'My Workspace',
+      icon: UserCheck,
+      badge: user ? <StatusBadge>Active</StatusBadge> : undefined,
+    },
+    { id: 'analyzer', label: 'CVE Analyzer', icon: Crosshair },
+    {
+      id: 'history',
+      label: 'Assessment History',
+      icon: History,
+      badge: <CountBadge>{historyCount}</CountBadge>,
+    },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   return (
-    <aside className="w-full lg:w-64 bg-[#080d19] border-r border-slate-800/80 p-4 flex flex-col justify-between shrink-0 h-full">
-      <div className="space-y-6">
-        {/* Navigation Tabs */}
-        <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 px-3">
-            Navigation
-          </span>
-          <nav className="mt-2 space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-sm shadow-cyan-500/10'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.count !== undefined && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                      {item.count}
-                    </span>
-                  )}
-                  {item.badge && (
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+    <PrimitiveSidebar
+      variant={variant}
+      width={268}
+      collapsedWidth={60}
+      aria-label="Main navigation"
+      className="h-full !bg-[#0d0d10]"
+    >
+      <SidebarHeader className="border-b border-border">
+        <WorkspaceMark />
+        <SidebarToggle className="ml-auto" />
+      </SidebarHeader>
 
-        {/* Quick Investigation Presets */}
-        <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 px-3 flex items-center justify-between">
-            <span>Quick CVE Presets</span>
-            <span className="text-[10px] text-cyan-400 lowercase font-normal">click to test</span>
-          </span>
-          <div className="mt-2 space-y-1.5">
+      <SidebarNav className="sidebar-nav">
+        <SidebarSection label="Navigation">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <SidebarItem
+                key={item.id}
+                icon={<Icon className="size-[17px]" />}
+                active={activeTab === item.id}
+                badge={item.badge}
+                onClick={() => setActiveTab(item.id)}
+              >
+                {item.label}
+              </SidebarItem>
+            );
+          })}
+        </SidebarSection>
+
+        <SidebarSection className="mt-2 border-t border-border pt-2">
+          <SidebarNested
+            icon={<Flame className="size-[17px]" />}
+            label="Quick CVE Presets"
+            defaultOpen
+          >
             {presets.map((preset) => {
               const Icon = preset.icon;
               return (
-                <button
+                <SidebarItem
                   key={preset.cve}
+                  icon={<Icon className={`size-[15px] ${preset.color}`} />}
+                  className="px-2.5 text-[12.5px]"
+                  badge={
+                    <span className="text-[10px] font-normal text-muted-foreground">
+                      {preset.name}
+                    </span>
+                  }
                   onClick={() => {
                     setActiveTab('analyzer');
-                    onSelectPresetCve(preset.cve, preset.criticality, preset.exposure, preset.context);
+                    onSelectPresetCve(
+                      preset.cve,
+                      preset.criticality,
+                      preset.exposure,
+                      preset.context
+                    );
                   }}
-                  className="w-full text-left p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/30 hover:bg-slate-800/50 transition-all group"
                 >
-                  <div className="flex items-center space-x-2">
-                    <Icon className={`w-3.5 h-3.5 ${preset.color} shrink-0`} />
-                    <span className="text-xs font-mono font-bold text-slate-200 group-hover:text-cyan-300">
-                      {preset.cve}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5 truncate pl-5">
-                    {preset.name}
-                  </div>
-                </button>
+                  {preset.cve}
+                </SidebarItem>
               );
             })}
-          </div>
-        </div>
-      </div>
+          </SidebarNested>
+        </SidebarSection>
+      </SidebarNav>
 
-      {/* Account & Architecture Footer */}
-      <div className="pt-4 border-t border-slate-800/80 space-y-2">
-        {/* Active Persona / User Status Pill */}
-        <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-          {user ? (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Signed In</span>
-                <span className="text-[10px] font-mono text-cyan-400 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">
-                  {user.isDemo ? 'Demo' : 'Cognito'}
-                </span>
-              </div>
-              <div className="font-semibold text-slate-200 truncate">{user.name || user.username}</div>
-              <div className="text-[11px] text-slate-400 truncate font-mono">{user.sub}</div>
-            </div>
-          ) : (
-            <div className="space-y-2 text-center">
-              <div className="flex items-center justify-center space-x-1.5 text-slate-400">
-                <Lock className="w-3.5 h-3.5" />
-                <span className="text-xs">Guest Mode</span>
-              </div>
-              <button
-                onClick={onOpenAuthModal}
-                className="w-full py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 font-semibold text-xs border border-sky-500/40 transition-all"
-              >
-                Sign In / Switch
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60 text-xs text-slate-400 space-y-1">
-          <div className="flex items-center space-x-2 text-slate-300 text-[11px]">
-            <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-            <span>NVIDIA Nemotron Guardrailed</span>
-          </div>
-          <div className="flex items-center space-x-2 text-[11px] text-slate-400">
-            <Database className="w-3 h-3 text-emerald-400 shrink-0" />
-            <span>DynamoDB UserHistoryIndex</span>
-          </div>
-        </div>
-      </div>
-    </aside>
+      <SidebarFooter>
+        <UserFooter user={user} onOpenAuthModal={onOpenAuthModal} />
+      </SidebarFooter>
+    </PrimitiveSidebar>
   );
 };

@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  Shield,
   Activity,
-  Wifi,
   RefreshCw,
   Menu,
   X,
-  Cpu,
   LogOut,
   ChevronDown,
   UserCheck,
@@ -45,6 +42,32 @@ export const Header: React.FC<HeaderProps> = ({
   onSignOut,
 }) => {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+      if (statusMenuRef.current && !statusMenuRef.current.contains(e.target as Node)) {
+        setStatusMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setAccountMenuOpen(false);
+        setStatusMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const isHealthy = systemHealth === 'healthy';
   const isConnecting = systemHealth === null || systemHealth === undefined;
@@ -53,217 +76,202 @@ export const Header: React.FC<HeaderProps> = ({
   const epssFeed = intelFeeds?.feeds?.first_epss;
   const kevFeed = intelFeeds?.feeds?.cisa_kev;
 
-  const getFeedColor = (status?: string) => {
+  const getFeedDotColor = (status?: string) => {
     if (!status || status === 'operational') return 'bg-emerald-400';
-    if (status === 'rate_limited' || status === 'degraded') return 'bg-amber-400';
+    if (status === 'rate_limited' || status === 'degraded' || status === 'uninitialized') return 'bg-amber-400';
     return 'bg-red-400';
   };
 
-  const pageTitles: Record<TabType, { title: string; subtitle: string }> = {
-    overview: {
-      title: 'Security Operations Overview',
-      subtitle: 'Global vulnerability posture & threat telemetry',
-    },
-    workspace: {
-      title: 'Personal Assessment Workspace',
-      subtitle: 'Tenant-isolated triage telemetry & personal analytics',
-    },
-    analyzer: {
-      title: 'CVE Intelligence & Prioritization',
-      subtitle: 'Deterministic 0–100 risk scoring with NVIDIA Nemotron AI',
-    },
-    history: {
-      title: 'Assessment Audit Log',
-      subtitle: 'Persisted DynamoDB investigations & triage history',
-    },
-    analytics: {
-      title: 'Vulnerability Risk Analytics',
-      subtitle: 'Multi-factor risk distributions & exposure heatmaps',
-    },
-    settings: {
-      title: 'System & Cloud Settings',
-      subtitle: 'Threat intelligence cache, AI models & AWS infrastructure',
-    },
+  const overallStatusDot = isConnecting
+    ? 'bg-zinc-400 animate-pulse'
+    : isHealthy
+    ? 'bg-emerald-400'
+    : 'bg-red-400 animate-pulse';
+
+  const overallStatusText = isConnecting
+    ? 'Connecting...'
+    : isHealthy
+    ? 'Feeds & API Online'
+    : 'Offline';
+
+  const pageTitles: Record<TabType, string> = {
+    overview: 'Security Operations Overview',
+    workspace: 'Personal Assessment Workspace',
+    analyzer: 'CVE Intelligence & Prioritization',
+    history: 'Assessment Audit Log',
+    analytics: 'Vulnerability Risk Analytics',
+    settings: 'Workspace & Feed Settings',
   };
 
-  const current = pageTitles[activeTab] || pageTitles.overview;
+  const currentTitle = pageTitles[activeTab] || pageTitles.overview;
 
   return (
-    <header className="border-b border-slate-800/80 bg-[#080d19]/90 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Left: Mobile Menu Toggle + Brand + Page Title */}
-        <div className="flex items-center space-x-3 sm:space-x-4">
+    <header className="sticky top-0 z-30 h-[52px] shrink-0 border-b border-border bg-background/85 backdrop-blur-md">
+      <div className="flex h-full items-center justify-between gap-3 px-4 sm:px-6">
+        {/* Left: Mobile Trigger + Active Page Title */}
+        <div className="flex min-w-0 items-center gap-3">
           {setMobileMenuOpen && (
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white"
+              className="flex size-8 items-center justify-center rounded-lg border border-border bg-white/[0.03] text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground lg:hidden"
               aria-label="Toggle Navigation"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </button>
           )}
 
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#080d19] animate-pulse" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
-                  VulnGuard AI
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center space-x-1">
-                  <Cpu className="w-2.5 h-2.5" />
-                  <span>Nemotron</span>
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 hidden xl:block">
-                AI CVE Intelligence & Deterministic Prioritization
-              </p>
-            </div>
-          </div>
-
-          {/* Current Page Title Separator (Hidden on small mobile) */}
-          <div className="hidden md:flex items-center space-x-2 pl-4 border-l border-slate-800">
-            <div>
-              <h2 className="text-sm font-bold text-slate-200">{current.title}</h2>
-              <p className="text-[11px] text-slate-500">{current.subtitle}</p>
-            </div>
-          </div>
+          <h1 className="truncate text-[13.5px] font-semibold tracking-tight text-foreground">
+            {currentTitle}
+          </h1>
         </div>
 
-        {/* Right: Live Intel Feeds, Mode, Account & Status */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          {/* Feed Pills */}
-          <div className="hidden lg:flex items-center space-x-1.5 text-xs">
-            <div
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300 cursor-default"
-              title={nvdFeed?.last_error ? `NVD: ${nvdFeed.last_error}` : `NVD 2.0: ${nvdFeed?.status || 'operational'}`}
+        {/* Right: Consolidated Status Popover, Refresh, Mode Switch, Account */}
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Consolidated Feeds & API Status Indicator */}
+          <div className="relative" ref={statusMenuRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setStatusMenuOpen((prev) => !prev);
+                setAccountMenuOpen(false);
+              }}
+              aria-expanded={statusMenuOpen}
+              className={`flex h-8 items-center gap-2 rounded-lg border px-2.5 text-[11px] font-medium transition-colors ${
+                isConnecting || isHealthy
+                  ? 'border-border bg-white/[0.02] text-zinc-300 hover:bg-white/[0.05] hover:text-foreground'
+                  : 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/15'
+              }`}
+              title="Inspect API & Threat Feed Status"
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${getFeedColor(nvdFeed?.status)} ${nvdFeed?.status === 'operational' ? 'animate-pulse' : ''}`} />
-              <span>NVD 2.0</span>
-            </div>
-            <div
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300 cursor-default"
-              title={epssFeed?.last_error ? `EPSS: ${epssFeed.last_error}` : `EPSS v3: ${epssFeed?.status || 'operational'}`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${getFeedColor(epssFeed?.status)}`} />
-              <span>EPSS v3</span>
-            </div>
-            <div
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300 cursor-default"
-              title={kevFeed?.last_error ? `CISA KEV: ${kevFeed.last_error}` : `CISA KEV: ${kevFeed?.status || 'operational'} (${kevCount} catalogued)`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${getFeedColor(kevFeed?.status)}`} />
-              <span>CISA KEV ({kevCount})</span>
-            </div>
+              <span className={`size-1.5 rounded-full ${overallStatusDot}`} />
+              <span className="hidden sm:inline">{overallStatusText}</span>
+              <ChevronDown className="size-3 text-muted-foreground" />
+            </button>
+
+            {statusMenuOpen && (
+              <div className="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-border bg-popover p-3 text-xs shadow-2xl">
+                <div className="mb-2.5 flex items-center justify-between border-b border-border pb-2">
+                  <span className="font-semibold text-foreground">System & Feed Telemetry</span>
+                  <span className={`font-mono text-[10.5px] ${isHealthy ? 'text-emerald-400' : isConnecting ? 'text-muted-foreground' : 'text-red-400'}`}>
+                    {isConnecting ? 'Connecting' : isHealthy ? 'API Online' : 'Offline'}
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-lg bg-white/[0.02] px-2.5 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`size-1.5 rounded-full ${getFeedDotColor(nvdFeed?.status)}`} />
+                      <span className="text-zinc-200">NIST NVD 2.0</span>
+                    </div>
+                    <span className="font-mono text-[10.5px] text-muted-foreground">
+                      {nvdFeed?.status || 'operational'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg bg-white/[0.02] px-2.5 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`size-1.5 rounded-full ${getFeedDotColor(epssFeed?.status)}`} />
+                      <span className="text-zinc-200">FIRST EPSS v3</span>
+                    </div>
+                    <span className="font-mono text-[10.5px] text-muted-foreground">
+                      {epssFeed?.status || 'operational'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg bg-white/[0.02] px-2.5 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`size-1.5 rounded-full ${getFeedDotColor(kevFeed?.status)}`} />
+                      <span className="text-zinc-200">CISA KEV</span>
+                    </div>
+                    <span className="font-mono text-[10.5px] text-muted-foreground tabular-nums">
+                      {kevFeed?.status || 'operational'} ({kevCount})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Refresh Button */}
           <button
+            type="button"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all disabled:opacity-50"
+            className="flex size-8 items-center justify-center rounded-lg border border-border bg-white/[0.02] text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground disabled:opacity-50"
             title="Refresh Intelligence and Assessments"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
+            <RefreshCw className={`size-3.5 ${isRefreshing ? 'animate-spin text-foreground' : ''}`} />
           </button>
 
           {/* Mode Switcher */}
           <button
+            type="button"
             onClick={() => setIsLiveMode(!isLiveMode)}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+            className={`flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-medium transition-colors ${
               isLiveMode
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+                ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15'
+                : 'border-amber-500/25 bg-amber-500/10 text-amber-400 hover:bg-amber-500/15'
             }`}
             title="Toggle between Live Upstream Feeds and Simulated Offline Fixtures"
           >
-            <Activity className="w-3.5 h-3.5" />
+            <Activity className="size-3.5" />
             <span className="hidden sm:inline">{isLiveMode ? 'LIVE' : 'DEMO'}</span>
           </button>
 
-          {/* Health Indicator */}
-          <div
-            className={`flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-xl border ${
-              isConnecting
-                ? 'bg-slate-900/80 border-slate-800 text-slate-400'
-                : isHealthy
-                ? 'bg-slate-900/80 border-slate-800 text-slate-300'
-                : 'bg-red-500/10 border-red-500/30 text-red-400'
-            }`}
-            title={
-              isConnecting
-                ? 'Connecting to API...'
-                : isHealthy
-                ? 'FastAPI & DynamoDB Online'
-                : 'Backend Unreachable'
-            }
-          >
-            <Wifi
-              className={`w-3.5 h-3.5 ${
-                isConnecting
-                  ? 'text-cyan-400 animate-pulse'
-                  : isHealthy
-                  ? 'text-emerald-400'
-                  : 'text-red-400 animate-pulse'
-              }`}
-            />
-            <span className="hidden sm:inline">
-              {isConnecting ? 'Connecting...' : isHealthy ? 'API Online' : 'Offline'}
-            </span>
-          </div>
-
           {/* Account Menu / Profile Button */}
-          <div className="relative">
+          <div className="relative" ref={accountMenuRef}>
             {user ? (
               <div>
                 <button
-                  onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-                  className="flex items-center space-x-2 px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 hover:border-cyan-500/50 text-slate-200 transition-all text-xs"
+                  type="button"
+                  onClick={() => {
+                    setAccountMenuOpen((prev) => !prev);
+                    setStatusMenuOpen(false);
+                  }}
+                  className="flex h-8 items-center gap-2 rounded-lg border border-border bg-white/[0.03] px-2.5 text-xs text-foreground transition-colors hover:bg-white/[0.06]"
                 >
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white font-bold text-[11px]">
+                  <div className="flex size-5 items-center justify-center rounded-full bg-white text-[10.5px] font-semibold text-zinc-950">
                     {user.username.charAt(0).toUpperCase()}
                   </div>
-                  <span className="hidden sm:inline font-semibold max-w-[110px] truncate">
+                  <span className="hidden max-w-[110px] truncate font-medium sm:inline">
                     {user.name || user.username}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <ChevronDown className="size-3.5 text-muted-foreground" />
                 </button>
 
                 {accountMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#0f172a] border border-slate-800 shadow-2xl py-2 z-50 text-xs animate-in fade-in duration-150">
-                    <div className="px-4 py-2 border-b border-slate-800">
-                      <div className="font-bold text-white truncate">{user.name || user.username}</div>
-                      <div className="text-[11px] text-slate-400 truncate">{user.email || 'No email registered'}</div>
-                      <div className="text-[10px] font-mono text-cyan-400 mt-1 truncate">
+                  <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-border bg-popover py-1.5 text-xs shadow-2xl">
+                    <div className="border-b border-border px-3.5 py-2.5">
+                      <div className="truncate font-semibold text-foreground">{user.name || user.username}</div>
+                      <div className="truncate text-[11px] text-muted-foreground">{user.email || 'No email registered'}</div>
+                      <div className="mt-1 truncate font-mono text-[10px] text-zinc-400">
                         ID: {user.sub}
                       </div>
                     </div>
 
-                    <div className="py-1">
+                    <div className="p-1">
                       <button
+                        type="button"
                         onClick={() => {
                           setAccountMenuOpen(false);
                           onOpenAuthModal();
                         }}
-                        className="w-full text-left px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center space-x-2 transition-all"
+                        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-zinc-300 transition-colors hover:bg-white/[0.05] hover:text-foreground"
                       >
-                        <UserCheck className="w-4 h-4 text-cyan-400" />
+                        <UserCheck className="size-3.5 text-muted-foreground" />
                         <span>Switch Persona / Auth</span>
                       </button>
 
                       <button
+                        type="button"
                         onClick={() => {
                           setAccountMenuOpen(false);
                           onSignOut();
                         }}
-                        className="w-full text-left px-4 py-2 text-red-400 hover:bg-red-500/10 flex items-center space-x-2 transition-all"
+                        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-red-400 transition-colors hover:bg-red-500/10"
                       >
-                        <LogOut className="w-4 h-4" />
+                        <LogOut className="size-3.5" />
                         <span>Sign Out</span>
                       </button>
                     </div>
@@ -272,10 +280,11 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             ) : (
               <button
+                type="button"
                 onClick={onOpenAuthModal}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-xs shadow-md shadow-sky-500/20 transition-all"
+                className="flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
               >
-                <Lock className="w-3.5 h-3.5" />
+                <Lock className="size-3.5" />
                 <span>Sign In</span>
               </button>
             )}

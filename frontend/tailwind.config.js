@@ -8,27 +8,49 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#090d16',
-        card: '#0f172a',
-        'card-hover': '#1e293b',
-        border: '#1e293b',
-        'border-light': '#334155',
-        primary: {
-          DEFAULT: '#38bdf8', // sky-400
-          foreground: '#0f172a',
+        background: 'rgb(var(--background-rgb) / <alpha-value>)',
+        foreground: 'var(--foreground)',
+        card: {
+          DEFAULT: 'rgb(var(--card-rgb) / <alpha-value>)',
+          foreground: 'var(--card-foreground)',
         },
+        'card-hover': '#18181b',
+        popover: {
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)',
+        },
+        primary: {
+          DEFAULT: 'var(--primary)',
+          foreground: 'var(--primary-foreground)',
+        },
+        secondary: {
+          DEFAULT: 'var(--secondary)',
+          foreground: 'var(--secondary-foreground)',
+        },
+        muted: {
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          foreground: 'var(--accent-foreground)',
+        },
+        border: 'var(--border)',
+        'border-light': 'rgba(255, 255, 255, 0.14)',
+        input: 'var(--input)',
+        ring: 'var(--ring)',
         risk: {
           critical: '#ef4444',
           high: '#f97316',
           medium: '#eab308',
           low: '#3b82f6',
-        }
+        },
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
-      }
+      },
     },
   },
   plugins: [],
-}
+};

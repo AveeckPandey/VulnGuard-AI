@@ -20,7 +20,7 @@ export const OverviewStats: React.FC<OverviewStatsProps> = ({ history }) => {
       label: 'Showing recent (limit 50)',
       icon: Activity,
       color: 'text-sky-400',
-      bg: 'bg-sky-500/10 border-sky-500/20',
+      bg: 'bg-white/[0.03] border-border',
     },
     {
       title: 'Critical Severity',
@@ -49,21 +49,18 @@ export const OverviewStats: React.FC<OverviewStatsProps> = ({ history }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat, idx) => {
         const Icon = stat.icon;
         return (
-          <div
-            key={idx}
-            className="p-4 rounded-xl bg-card border border-border shadow-sm flex items-center justify-between"
-          >
+          <div key={idx} className="surface-panel flex items-center justify-between rounded-2xl p-4">
             <div>
-              <p className="text-xs font-medium text-slate-400">{stat.title}</p>
-              <p className="text-2xl font-extrabold text-white mt-1 font-mono">{stat.value}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">{stat.label}</p>
+              <p className="text-xs font-medium text-muted-foreground">{stat.title}</p>
+              <p className="mt-1 font-mono text-2xl font-semibold text-foreground tabular-nums">{stat.value}</p>
+              <p className="mt-0.5 text-[11px] text-zinc-500">{stat.label}</p>
             </div>
-            <div className={`p-3 rounded-xl border ${stat.bg} ${stat.color}`}>
-              <Icon className="w-5 h-5" />
+            <div className={`rounded-xl border p-2.5 ${stat.bg} ${stat.color}`}>
+              <Icon className="size-5" />
             </div>
           </div>
         );
